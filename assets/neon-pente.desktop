@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Neon Pente
+Comment=Neon-styled Pente strategy board game
+Exec=neon_pente
+Icon=neon-pente
+Terminal=false
+Type=Application
+Categories=Game;BoardGame;
+Keywords=pente;board;game;strategy;neon;
