@@ -24,11 +24,19 @@ class Constants {
   static const String puzzleDefend = 'defend';
   static const String puzzleWin = 'win';
   static const String puzzleThreat = 'threat';
+
+  // LAN networking
+  static const int lanUdpPort = 41234;
+  static const int lanTcpPort = 41235;
+  static const int lanBeaconIntervalMs = 2000;
+  static const int lanHeartbeatIntervalMs = 5000;
+  static const int lanHeartbeatTimeoutMs = 10000;
+  static const String lanProtocolVersion = '1';
 }
 
 enum StoneType { none, player1, player2 }
 
-enum GameMode { pvp, pvAI, training }
+enum GameMode { pvp, pvAI, training, lan }
 
 enum GamePhase { playing, paused, finished }
 

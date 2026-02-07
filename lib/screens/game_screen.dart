@@ -10,17 +10,23 @@ import '../main.dart' show boardThemeNotifier;
 import '../theme/neon_theme.dart';
 import '../widgets/neon_board.dart';
 import '../widgets/eval_bar_widget.dart';
+import '../network/lan_connection.dart';
+import '../network/lan_protocol.dart';
 
 class GameScreen extends StatefulWidget {
   final AIDifficulty difficulty;
   final GameMode mode;
   final TimeControl timeControl;
+  final LanGameConnection? lanConnection;
+  final StoneType? localPlayer;
 
   const GameScreen({
     super.key,
     required this.difficulty,
     this.mode = GameMode.pvAI,
     this.timeControl = TimeControl.none,
+    this.lanConnection,
+    this.localPlayer,
   });
 
   @override
@@ -46,6 +52,16 @@ class _GameScreenState extends State<GameScreen> {
   int _player2TimeMs = 0;
   Timer? _clockTimer;
   bool _clockRunning = false;
+
+  // ── LAN ──────────────────────────────────────────────────────────────
+  LanGameConnection? _lanConnection;
+  StoneType _localPlayer = StoneType.player1;
+  StreamSubscription<LanMessage>? _lanSub;
+  bool _opponentDisconnected = false;
+
+  bool get _isLan => _mode == GameMode.lan;
+  bool get _isLocalPlayerTurn =>
+      !_isLan || _gameState.currentPlayer == _localPlayer;
 
   bool get _hasClock => _timeControl != TimeControl.none;
 
@@ -83,11 +99,32 @@ class _GameScreenState extends State<GameScreen> {
       _player1TimeMs = ms;
       _player2TimeMs = ms;
     }
+
+    // Init LAN connection
+    if (_isLan && widget.lanConnection != null) {
+      _lanConnection = widget.lanConnection;
+      _localPlayer = widget.localPlayer ?? StoneType.player1;
+      _lanConnection!.onDisconnect = _onLanDisconnect;
+      _lanSub = _lanConnection!.messages.listen(_onLanMessage);
+
+      // If host, send game_start to client
+      if (_localPlayer == StoneType.player1) {
+        _lanConnection!.send(LanMessage(
+          type: LanMessageType.gameStart,
+          data: {
+            'yourColor': StoneType.player2.index,
+            'timeControl': _timeControl.index,
+          },
+        ));
+      }
+    }
   }
 
   @override
   void dispose() {
     _clockTimer?.cancel();
+    _lanSub?.cancel();
+    _lanConnection?.close();
     super.dispose();
   }
 
@@ -139,6 +176,183 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  // ── LAN message handling ───────────────────────────────────────────
+
+  void _onLanMessage(LanMessage msg) {
+    if (!mounted) return;
+    switch (msg.type) {
+      case LanMessageType.move:
+        _onRemoteMove(msg.data);
+      case LanMessageType.resign:
+        _onRemoteResign();
+      case LanMessageType.rematchRequest:
+        _showRematchRequestDialog();
+      case LanMessageType.rematchAccept:
+        _resetGame();
+      case LanMessageType.gameStart:
+        // Client receives initial game config from host
+        final tc = msg.data['timeControl'] as int?;
+        if (tc != null) {
+          _timeControl = TimeControl.values[tc];
+          if (_hasClock) {
+            final ms = _timeControlToMs(_timeControl);
+            setState(() {
+              _player1TimeMs = ms;
+              _player2TimeMs = ms;
+            });
+          }
+        }
+      default:
+        break;
+    }
+  }
+
+  void _onRemoteMove(Map<String, dynamic> data) {
+    final row = data['row'] as int;
+    final col = data['col'] as int;
+    final pos = Position(row, col);
+
+    if (!PenteEngine.isValidMove(_gameState, pos)) return;
+
+    setState(() {
+      _gameState = PenteEngine.makeMove(_gameState, pos);
+    });
+
+    if (_hasClock && !_clockRunning && !_gameState.isGameOver) {
+      _startClock();
+    }
+
+    _updateEvaluation();
+    _checkGameEnd();
+  }
+
+  void _onRemoteResign() {
+    _stopClock();
+    setState(() {
+      _gameState = _gameState.copyWith(
+        phase: GamePhase.finished,
+        winner: _localPlayer,
+      );
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _showGameOverDialog();
+      }
+    });
+  }
+
+  void _onLanDisconnect() {
+    if (!mounted || _opponentDisconnected) return;
+    _opponentDisconnected = true;
+    _stopClock();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NeonTheme.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: NeonTheme.neonRed.withAlpha(80)),
+        ),
+        title: Text(
+          'DISCONNECTED',
+          style: TextStyle(
+            color: NeonTheme.neonRed,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+          ),
+        ),
+        content: Text(
+          'Your opponent has disconnected.',
+          style: TextStyle(color: NeonTheme.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            child: Text(
+              'RETURN TO MENU',
+              style: TextStyle(color: NeonTheme.neonCyan),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendMove(Position pos) {
+    _lanConnection?.send(LanMessage(
+      type: LanMessageType.move,
+      data: {'row': pos.row, 'col': pos.col},
+    ));
+  }
+
+  void _sendResign() {
+    _lanConnection?.send(
+      const LanMessage(type: LanMessageType.resign),
+    );
+  }
+
+  void _sendRematchRequest() {
+    _lanConnection?.send(
+      const LanMessage(type: LanMessageType.rematchRequest),
+    );
+  }
+
+  void _showRematchRequestDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NeonTheme.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: NeonTheme.neonGreen.withAlpha(80)),
+        ),
+        title: Text(
+          'REMATCH?',
+          style: TextStyle(
+            color: NeonTheme.neonGreen,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+          ),
+        ),
+        content: Text(
+          'Your opponent wants a rematch!',
+          style: TextStyle(color: NeonTheme.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context); // go back to menu
+            },
+            child: Text(
+              'DECLINE',
+              style: TextStyle(color: NeonTheme.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _lanConnection?.send(
+                const LanMessage(type: LanMessageType.rematchAccept),
+              );
+              _resetGame();
+            },
+            child: Text(
+              'ACCEPT',
+              style: TextStyle(color: NeonTheme.neonGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatTime(int ms) {
     if (ms <= 0) return '0:00';
     final totalSeconds = (ms / 1000).ceil();
@@ -180,6 +394,11 @@ class _GameScreenState extends State<GameScreen> {
   String get _statusText {
     if (_gameState.isGameOver) {
       if (_gameState.winner == null) return 'Draw!';
+      if (_isLan) {
+        return _gameState.winner == _localPlayer
+            ? 'You win!'
+            : 'Opponent wins!';
+      }
       if (_mode == GameMode.pvAI) {
         return _gameState.winner == StoneType.player1
             ? 'Player 1 wins!'
@@ -190,6 +409,11 @@ class _GameScreenState extends State<GameScreen> {
           : 'Player 2 wins!';
     }
     if (_isAIThinking) return 'AI thinking...';
+    if (_isLan) {
+      return _isLocalPlayerTurn
+          ? 'Your turn'
+          : 'Waiting for opponent...';
+    }
     if (_mode == GameMode.pvAI) {
       return _gameState.currentPlayer == StoneType.player1
           ? 'Your turn'
@@ -219,6 +443,7 @@ class _GameScreenState extends State<GameScreen> {
   void _onBoardTap(Position pos) {
     if (_isAIThinking) return;
     if (_gameState.isGameOver) return;
+    if (!_isLocalPlayerTurn) return; // LAN: only act on our turn
     if (!PenteEngine.isValidMove(_gameState, pos)) return;
 
     setState(() {
@@ -226,6 +451,9 @@ class _GameScreenState extends State<GameScreen> {
       _selectedPosition = null;
       _currentHighlight = null;
     });
+
+    // Send move to remote opponent
+    if (_isLan) _sendMove(pos);
 
     // Start the clock on the first move
     if (_hasClock && !_clockRunning && !_gameState.isGameOver) {
@@ -354,6 +582,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _showExitDialog() {
     if (_gameState.isGameOver || _gameState.moveCount == 0) {
+      if (_isLan) _sendResign();
       Navigator.pop(context);
       return;
     }
@@ -376,7 +605,9 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ),
         content: Text(
-          'Your current game will be lost.',
+          _isLan
+              ? 'Leaving will count as a resignation.'
+              : 'Your current game will be lost.',
           style: TextStyle(color: NeonTheme.textPrimary),
         ),
         actions: [
@@ -389,12 +620,71 @@ class _GameScreenState extends State<GameScreen> {
           ),
           TextButton(
             onPressed: () {
+              if (_isLan) _sendResign();
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
             child: Text(
               'LEAVE',
               style: TextStyle(color: NeonTheme.neonCyan),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResignDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NeonTheme.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: NeonTheme.neonRed.withAlpha(60)),
+        ),
+        title: Text(
+          'RESIGN?',
+          style: TextStyle(
+            color: NeonTheme.neonRed,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to resign?',
+          style: TextStyle(color: NeonTheme.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'CANCEL',
+              style: TextStyle(color: NeonTheme.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _sendResign();
+              _stopClock();
+              final opponent = _localPlayer == StoneType.player1
+                  ? StoneType.player2
+                  : StoneType.player1;
+              setState(() {
+                _gameState = _gameState.copyWith(
+                  phase: GamePhase.finished,
+                  winner: opponent,
+                );
+              });
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted) _showGameOverDialog();
+              });
+            },
+            child: Text(
+              'RESIGN',
+              style: TextStyle(color: NeonTheme.neonRed),
             ),
           ),
         ],
@@ -456,6 +746,14 @@ class _GameScreenState extends State<GameScreen> {
     if (winner == null) {
       title = 'DRAW';
       titleColor = NeonTheme.neonYellow;
+    } else if (_isLan) {
+      if (winner == _localPlayer) {
+        title = 'VICTORY!';
+        titleColor = NeonTheme.neonGreen;
+      } else {
+        title = 'DEFEAT';
+        titleColor = NeonTheme.neonRed;
+      }
     } else if (_mode == GameMode.pvAI) {
       if (winner == StoneType.player1) {
         title = 'VICTORY!';
@@ -473,9 +771,11 @@ class _GameScreenState extends State<GameScreen> {
 
     String winType;
     if (timeoutLoser != null) {
-      final loserName = _mode == GameMode.pvAI
-          ? (timeoutLoser == StoneType.player1 ? 'Player' : 'AI')
-          : (timeoutLoser == StoneType.player1 ? 'Player 1' : 'Player 2');
+      final loserName = _isLan
+          ? (timeoutLoser == _localPlayer ? 'You' : 'Opponent')
+          : _mode == GameMode.pvAI
+              ? (timeoutLoser == StoneType.player1 ? 'Player' : 'AI')
+              : (timeoutLoser == StoneType.player1 ? 'Player 1' : 'Player 2');
       winType = '$loserName ran out of time';
     } else if (_gameState.winningStones != null) {
       winType = '5 in a row';
@@ -536,10 +836,14 @@ class _GameScreenState extends State<GameScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _resetGame();
+              if (_isLan) {
+                _sendRematchRequest();
+              } else {
+                _resetGame();
+              }
             },
             child: Text(
-              'REMATCH',
+              _isLan ? 'REQUEST REMATCH' : 'REMATCH',
               style: TextStyle(color: NeonTheme.neonGreen),
             ),
           ),
@@ -959,7 +1263,7 @@ class _GameScreenState extends State<GameScreen> {
       elevation: 0,
       centerTitle: true,
       title: Text(
-        'NEON PENTE',
+        _isLan ? 'LAN GAME' : 'NEON PENTE',
         style: TextStyle(
           color: NeonTheme.neonCyan,
           fontSize: 22,
@@ -1022,12 +1326,19 @@ class _GameScreenState extends State<GameScreen> {
           },
           tooltip: 'Toggle Coach',
         ),
-        // New game
-        IconButton(
-          icon: const Icon(Icons.refresh, color: NeonTheme.neonCyan),
-          onPressed: _showResetDialog,
-          tooltip: 'New Game',
-        ),
+        // LAN: resign button; otherwise: new game
+        if (_isLan && !_gameState.isGameOver)
+          IconButton(
+            icon: const Icon(Icons.flag, color: NeonTheme.neonRed),
+            onPressed: _showResignDialog,
+            tooltip: 'Resign',
+          )
+        else if (!_isLan)
+          IconButton(
+            icon: const Icon(Icons.refresh, color: NeonTheme.neonCyan),
+            onPressed: _showResetDialog,
+            tooltip: 'New Game',
+          ),
       ],
     );
   }
@@ -1178,8 +1489,34 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
           ),
-          // Difficulty label (PvAI only)
-          if (_mode == GameMode.pvAI)
+          // Mode badge
+          if (_isLan)
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                    color: NeonTheme.neonBlue.withAlpha(80)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.wifi, color: NeonTheme.neonBlue, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    'LAN',
+                    style: TextStyle(
+                      color: NeonTheme.neonBlue,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (_mode == GameMode.pvAI)
             Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1234,9 +1571,14 @@ class _GameScreenState extends State<GameScreen> {
         : _bt.player2Color;
     final isActive =
         _gameState.currentPlayer == player && !_gameState.isGameOver;
-    final name = _mode == GameMode.pvAI
-        ? (player == StoneType.player1 ? 'YOU' : 'AI')
-        : (player == StoneType.player1 ? 'P1' : 'P2');
+    final String name;
+    if (_isLan) {
+      name = player == _localPlayer ? 'YOU' : 'OPP';
+    } else if (_mode == GameMode.pvAI) {
+      name = player == StoneType.player1 ? 'YOU' : 'AI';
+    } else {
+      name = player == StoneType.player1 ? 'P1' : 'P2';
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

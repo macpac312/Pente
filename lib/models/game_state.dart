@@ -68,4 +68,61 @@ class GameState {
   int capturesFor(StoneType player) {
     return player == StoneType.player1 ? player1Captures : player2Captures;
   }
+
+  // ── Serialization (for LAN multiplayer) ──────────────────────────────
+
+  Map<String, dynamic> toJson() {
+    // Encode board as compact string: each cell is 0/1/2
+    final buf = StringBuffer();
+    for (final row in board) {
+      for (final cell in row) {
+        buf.write(cell.index);
+      }
+    }
+    return {
+      'board': buf.toString(),
+      'currentPlayer': currentPlayer.index,
+      'p1Captures': player1Captures,
+      'p2Captures': player2Captures,
+      'moves': moveHistory.map((m) => m.toJson()).toList(),
+      'phase': phase.index,
+      'winner': winner?.index,
+      'moveCount': moveCount,
+      'winStones': winningStones?.map((p) => [p.row, p.col]).toList(),
+    };
+  }
+
+  factory GameState.fromJson(Map<String, dynamic> json) {
+    final boardStr = json['board'] as String;
+    final board = List.generate(Constants.boardSize, (r) {
+      return List.generate(Constants.boardSize, (c) {
+        final idx = r * Constants.boardSize + c;
+        return StoneType.values[int.parse(boardStr[idx])];
+      });
+    });
+
+    final movesJson = json['moves'] as List<dynamic>? ?? [];
+    final moves = movesJson
+        .map((m) => MoveRecord.fromJson(m as Map<String, dynamic>))
+        .toList();
+
+    final winStonesJson = json['winStones'] as List<dynamic>?;
+    final winStones = winStonesJson
+        ?.map((p) => Position((p as List)[0] as int, p[1] as int))
+        .toList();
+
+    return GameState(
+      board: board,
+      currentPlayer: StoneType.values[json['currentPlayer'] as int],
+      player1Captures: json['p1Captures'] as int,
+      player2Captures: json['p2Captures'] as int,
+      moveHistory: moves,
+      phase: GamePhase.values[json['phase'] as int],
+      winner: json['winner'] != null
+          ? StoneType.values[json['winner'] as int]
+          : null,
+      moveCount: json['moveCount'] as int,
+      winningStones: winStones,
+    );
+  }
 }

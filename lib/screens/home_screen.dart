@@ -6,6 +6,7 @@ import 'training_screen.dart';
 import 'coach_screen.dart';
 import 'settings_screen.dart';
 import 'rules_screen.dart';
+import 'lan_lobby_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -141,6 +142,8 @@ class _HomeScreenState extends State<HomeScreen>
                   _buildTimeControlSection(),
                   const SizedBox(height: 32),
                   _buildStartButton(),
+                  const SizedBox(height: 12),
+                  _buildLanPlayButton(),
                   const SizedBox(height: 12),
                   _buildPuzzlesButton(),
                   const SizedBox(height: 12),
@@ -444,6 +447,37 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         );
       },
+    );
+  }
+
+  // --- LAN Play button (blue, outlined) ---
+
+  Widget _buildLanPlayButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LanLobbyScreen()),
+        ),
+        icon: Icon(Icons.wifi, color: NeonTheme.neonBlue, size: 20),
+        label: Text(
+          'LAN PLAY',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 2,
+            color: NeonTheme.neonBlue,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: BorderSide(color: NeonTheme.neonBlue.withAlpha(100)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
     );
   }
 
