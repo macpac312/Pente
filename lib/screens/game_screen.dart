@@ -475,54 +475,295 @@ class _GameScreenState extends State<GameScreen> {
                     letterSpacing: 3,
                   ),
                 ),
-                const SizedBox(height: 20),
-                _academyTopic(
-                  'Captures',
-                  'Flank exactly 2 adjacent opponent stones '
-                      '(YOUR-OPP-OPP-YOUR) to capture the pair. '
-                      'Captured stones are removed from the board. '
-                      'Capture 5 pairs to win!',
-                  Icons.catching_pokemon,
-                  NeonTheme.neonOrange,
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 16),
+                  child: Text(
+                    'Learn Pente strategy from beginner to advanced',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: NeonTheme.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
+
+                // ── BASICS ──
+                _academySectionHeader('BASICS'),
                 _academyTopic(
-                  '5 in a Row',
-                  'Place 5 or more stones in an unbroken line '
-                      '(horizontal, vertical, or diagonal) to win. '
-                      'Building open-ended lines of 3 or 4 creates '
-                      'powerful threats.',
-                  Icons.linear_scale,
-                  NeonTheme.neonCyan,
+                  'How to Win',
+                  'There are two ways to win in Pente:\n\n'
+                      '1. Five in a Row: Place 5 or more stones in an unbroken line '
+                      '(horizontal, vertical, or diagonal).\n\n'
+                      '2. Capture Win: Capture 5 pairs (10 opponent stones total). '
+                      'Flank exactly 2 adjacent opponent stones with yours '
+                      '(YOUR-OPP-OPP-YOUR) to capture the pair.',
+                  Icons.emoji_events,
+                  NeonTheme.neonGreen,
                 ),
                 _academyTopic(
                   'Tournament Rule',
-                  'Player 1 must place their first stone at the center. '
-                      'Their second stone must be at least 3 intersections '
-                      'away from center. This balances the first-move '
-                      'advantage.',
+                  'Player 1 must place their first stone at the center (J10). '
+                      'Their second stone must be at least 3 intersections from center '
+                      '(shown by the red boundary line).\n\n'
+                      'This rule exists because the first player has a significant '
+                      'advantage. Without it, Player 1 could build unstoppable threats '
+                      'from the center too easily.',
                   Icons.gavel,
                   NeonTheme.neonYellow,
                 ),
                 _academyTopic(
-                  'Threats & Offense',
-                  'Create multiple threats simultaneously. An open-ended '
-                      'line of 4 is unstoppable. Look for moves that '
-                      'threaten both a capture and extending a line.',
-                  Icons.bolt,
+                  'Initiative',
+                  'Initiative means making moves that force your opponent to respond '
+                      'defensively. When you have the initiative, you control the game.\n\n'
+                      'How to gain initiative:\n'
+                      '- Create threats that require an immediate response\n'
+                      '- Build Open Trias or capture threats\n'
+                      '- Make moves that serve dual purposes (attack + defense)\n\n'
+                      'How you lose initiative:\n'
+                      '- Making purely defensive moves\n'
+                      '- Playing moves that don\'t create threats\n\n'
+                      'Maintaining initiative is the key to winning at higher levels!',
+                  Icons.speed,
+                  NeonTheme.neonCyan,
+                ),
+
+                // ── BASIC SHAPES ──
+                _academySectionHeader('BASIC SHAPES'),
+                _academyTopic(
+                  'Pair (XX)',
+                  'Two adjacent stones in a line. This is the simplest formation.\n\n'
+                      'Warning: Pairs are vulnerable to capture! If your opponent has '
+                      'a stone on one side, they can place one on the other side to '
+                      'capture your pair (OPP-XX-OPP).\n\n'
+                      'Tip: Consider using Stretch Twos (X_X) instead of Pairs when '
+                      'possible, as they cannot be captured.',
+                  Icons.circle,
+                  NeonTheme.neonOrange,
+                ),
+                _academyTopic(
+                  'Stretch Two (X_X)',
+                  'Two stones with exactly one empty space between them.\n\n'
+                      'Advantages over a regular Pair:\n'
+                      '- Cannot be captured (not adjacent)\n'
+                      '- Can be extended in 3 ways (fill the gap, or extend either end)\n'
+                      '- Harder for opponent to block all extensions\n\n'
+                      'Stretch Twos are a cornerstone of good Pente play. Prefer them '
+                      'over adjacent pairs whenever you can!',
+                  Icons.space_bar,
+                  NeonTheme.neonBlue,
+                ),
+                _academyTopic(
+                  'Open Tria (_XXX_)',
+                  'Three stones in a row with both ends open (empty).\n\n'
+                      'This is one of the most powerful shapes in Pente! Your opponent '
+                      'must respond immediately, or you will extend to an Open Tessera '
+                      'next turn.\n\n'
+                      'An Open Tria forces a response because:\n'
+                      '- It can be extended to 4 from either end\n'
+                      '- Blocking one end leaves the other open\n'
+                      '- Only a capture or a block can stop it',
+                  Icons.change_history,
+                  NeonTheme.neonMagenta,
+                ),
+                _academyTopic(
+                  'Stretch Tria (XX_X / X_XX)',
+                  'Three stones with one gap, creating a "stretched" line.\n\n'
+                      'Examples: XX_X, X_XX, or patterns like _XX_X_, _X_XX_\n\n'
+                      'Why Stretch Trias are powerful:\n'
+                      '- Harder to spot and block than regular trias\n'
+                      '- Filling the gap creates 4-in-a-row\n'
+                      '- The gap can sometimes be misidentified by opponents\n\n'
+                      'Like Open Trias, these force your opponent to respond!',
+                  Icons.unfold_more,
+                  NeonTheme.neonPurple,
+                ),
+                _academyTopic(
+                  'Open Tessera (_XXXX_)',
+                  'Four stones in a row with both ends open. This is UNSTOPPABLE!\n\n'
+                      'Your opponent cannot block both ends in one move, so you will '
+                      'complete five-in-a-row next turn.\n\n'
+                      'The only defense against an Open Tessera is to have already '
+                      'set up a winning capture threat, or to win first.\n\n'
+                      'Goal of every game: create an Open Tessera while preventing '
+                      'your opponent from doing the same.',
+                  Icons.auto_awesome,
+                  NeonTheme.neonGreen,
+                ),
+
+                // ── ADVANCED SHAPES ──
+                _academySectionHeader('ADVANCED SHAPES'),
+                _academyTopic(
+                  'I-Shape',
+                  'Two Stretch Twos sharing a common stone, forming a straight line '
+                      'like X_X_X.\n\n'
+                      'This creates a double threat: filling either gap creates a '
+                      'Stretch Tria. The opponent must carefully block in the right '
+                      'place or face unstoppable escalation.\n\n'
+                      'The I-shape is one of the easiest advanced patterns to set up.',
+                  Icons.straighten,
+                  NeonTheme.neonCyan,
+                ),
+                _academyTopic(
+                  'L-Shape',
+                  'Two Stretch Twos sharing a common stone at a 90-degree angle, '
+                      'forming an L pattern.\n\n'
+                      'This is powerful because filling either gap creates a Stretch Tria '
+                      'in a different direction. The opponent can only block one direction '
+                      'per move!\n\n'
+                      'Look for opportunities to build L-shapes at line intersections.',
+                  Icons.turn_right,
+                  NeonTheme.neonBlue,
+                ),
+                _academyTopic(
+                  'X-Shape (Double Fork)',
+                  'Two Stretch Twos sharing a common stone at opposing angles (e.g., '
+                      'both diagonals through one stone).\n\n'
+                      'Like the L-shape but even harder to defend against, since the '
+                      'threats extend in two non-adjacent directions.\n\n'
+                      'Building X-shapes from the center of the board is particularly '
+                      'effective as it maximizes your attacking reach.',
+                  Icons.close,
+                  NeonTheme.neonMagenta,
+                ),
+                _academyTopic(
+                  'H-Shape',
+                  'Two Trias on parallel adjacent lines sharing extending stones. '
+                      'This creates a complex threat structure.\n\n'
+                      'The H-shape often leads to unstoppable combinations because '
+                      'the opponent cannot block threats on two separate lines '
+                      'simultaneously.\n\n'
+                      'These typically arise in the midgame from well-placed Stretch Twos.',
+                  Icons.view_column,
+                  NeonTheme.neonOrange,
+                ),
+
+                // ── CAPTURE TACTICS ──
+                _academySectionHeader('CAPTURE TACTICS'),
+                _academyTopic(
+                  'Wedge',
+                  'A Wedge creates multiple capture threats with a single move.\n\n'
+                      'Place your stone between two opponent pairs so that you threaten '
+                      'to capture in multiple directions at once. The opponent can only '
+                      'protect one pair per move!\n\n'
+                      'How to set up a Wedge:\n'
+                      '- Spot two enemy pairs that share a common adjacent empty cell\n'
+                      '- Place your stone at that intersection\n'
+                      '- The opponent must lose at least one pair\n\n'
+                      'The coach will highlight Wedge opportunities with the Wedge icon.',
+                  Icons.compress,
                   NeonTheme.neonRed,
                 ),
                 _academyTopic(
-                  'Defense',
-                  'Always check for opponent\'s winning threats before '
-                      'making your move. Protect your pairs from being '
-                      'captured. Block open-ended lines of 3 early.',
-                  Icons.shield,
-                  NeonTheme.neonBlue,
+                  'Extension',
+                  'Extension is a capture tactic where you extend a line toward a '
+                      'capturable pair.\n\n'
+                      'For example: You have a line of 3 (XXX), and two spaces away '
+                      'there is an opponent pair (OO) with your stone behind it.\n'
+                      'Extending to XXXX threatens both five-in-a-row AND completing '
+                      'the capture.\n\n'
+                      'The best moves in Pente serve multiple purposes: extending your '
+                      'line while threatening captures, or blocking while building.',
+                  Icons.open_in_full,
+                  NeonTheme.neonPurple,
                 ),
+                _academyTopic(
+                  'Capture Safety',
+                  'Avoid creating pairs that can be immediately captured!\n\n'
+                      'A pair is vulnerable when:\n'
+                      '- One end has an opponent stone\n'
+                      '- The other end is empty (opponent can complete the flank)\n\n'
+                      'Safe alternatives:\n'
+                      '- Use Stretch Twos (X_X) instead of Pairs (XX)\n'
+                      '- Place pairs where both ends are protected\n'
+                      '- Create pairs only when the capture threat gives you initiative\n\n'
+                      'Remember: Losing 5 pairs loses the game, regardless of your '
+                      'line progress!',
+                  Icons.security,
+                  NeonTheme.neonYellow,
+                ),
+
+                // ── STRATEGY ──
+                _academySectionHeader('STRATEGY'),
+                _academyTopic(
+                  'Opening Principles',
+                  'The opening moves set the tone for the entire game.\n\n'
+                      'For Player 1:\n'
+                      '- First move is always center (J10)\n'
+                      '- Second move must be 3+ away (tournament rule)\n'
+                      '- Aim for Stretch Twos pointing toward center\n\n'
+                      'For Player 2:\n'
+                      '- Place near center to contest control\n'
+                      '- Don\'t place adjacent to Player 1 (creates capture risk)\n'
+                      '- Look for diagonal development\n\n'
+                      'General: Develop in multiple directions early. Don\'t commit '
+                      'everything to one line!',
+                  Icons.flag,
+                  NeonTheme.neonGreen,
+                ),
+                _academyTopic(
+                  'Dual-Purpose Moves',
+                  'The strongest moves serve multiple purposes at once:\n\n'
+                      '- Attack + Defense: Extend your line while blocking opponent\'s\n'
+                      '- Line + Capture: Extend a line toward a capturable pair\n'
+                      '- Double Threat: Create threats in two directions simultaneously\n\n'
+                      'Always ask yourself: "Does this move do more than one thing?"\n\n'
+                      'Moves that only serve one purpose waste tempo (initiative). '
+                      'The best players find moves that create problems in multiple '
+                      'directions at once.',
+                  Icons.all_inclusive,
+                  NeonTheme.neonCyan,
+                ),
+                _academyTopic(
+                  'When to Capture',
+                  'Captures aren\'t always the best move, even when available!\n\n'
+                      'Capture when:\n'
+                      '- It wins the game (5th pair)\n'
+                      '- It breaks an opponent\'s dangerous line\n'
+                      '- It also extends your own position\n'
+                      '- You\'re at 4 captures (opponent must play cautiously)\n\n'
+                      'Don\'t capture when:\n'
+                      '- You have a bigger threat (like creating an Open Tessera)\n'
+                      '- The capture doesn\'t improve your position\n'
+                      '- Your opponent WANTS you to capture (it may be a trap)\n\n'
+                      'Having 4 captures creates enormous pressure: the opponent must '
+                      'avoid all pairs!',
+                  Icons.gps_fixed,
+                  NeonTheme.neonOrange,
+                ),
+
+                const SizedBox(height: 20),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _academySectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Divider(color: NeonTheme.neonGreen.withAlpha(40)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              title,
+              style: TextStyle(
+                color: NeonTheme.neonGreen.withAlpha(150),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 3,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Divider(color: NeonTheme.neonGreen.withAlpha(40)),
+          ),
+        ],
       ),
     );
   }
@@ -1203,6 +1444,14 @@ class _GameScreenState extends State<GameScreen> {
         return NeonTheme.neonOrange;
       case HintType.vulnerablePair:
         return NeonTheme.neonYellow;
+      case HintType.openTessera:
+        return NeonTheme.neonGreen;
+      case HintType.openTria:
+        return NeonTheme.neonCyan;
+      case HintType.stretchTria:
+        return NeonTheme.neonPurple;
+      case HintType.wedge:
+        return NeonTheme.neonOrange;
       case HintType.buildLine:
         return NeonTheme.neonCyan;
     }

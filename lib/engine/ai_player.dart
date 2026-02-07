@@ -61,7 +61,7 @@ class AIPlayer {
 
     // Evaluate candidate moves
     final moves = PenteEngine.getNeighborMoves(state);
-    return _scoreMoves(state, moves, depth: 1);
+    return _scoreMoves(state, moves);
   }
 
   /// Hard: deeper evaluation with minimax.
@@ -99,7 +99,26 @@ class AIPlayer {
     for (final move in PenteEngine.getNeighborMoves(opponentState)) {
       final newState = PenteEngine.makeMove(opponentState, move);
       if (newState.winner == opponent) {
-        // Verify we can play here
+        if (PenteEngine.isValidMove(state, move)) return move;
+      }
+    }
+
+    // 3. Create open tessera if possible (unstoppable)
+    for (final move in moves) {
+      final testBoard = state.board.map((r) => List<StoneType>.from(r)).toList();
+      testBoard[move.row][move.col] = player;
+      final shapes = PenteEngine.detectShapes(testBoard, player);
+      if (shapes.any((s) => s.type == ShapeType.openTessera)) {
+        return move;
+      }
+    }
+
+    // 4. Block opponent's open tria (which becomes an open tessera next turn)
+    for (final move in PenteEngine.getNeighborMoves(opponentState)) {
+      final testBoard = state.board.map((r) => List<StoneType>.from(r)).toList();
+      testBoard[move.row][move.col] = opponent;
+      final shapes = PenteEngine.detectShapes(testBoard, opponent);
+      if (shapes.any((s) => s.type == ShapeType.openTessera)) {
         if (PenteEngine.isValidMove(state, move)) return move;
       }
     }
@@ -108,7 +127,7 @@ class AIPlayer {
   }
 
   /// Score moves and return the best one (greedy, single depth).
-  Position _scoreMoves(GameState state, List<Position> moves, {int depth = 1}) {
+  Position _scoreMoves(GameState state, List<Position> moves) {
     final player = state.currentPlayer;
     double bestScore = double.negativeInfinity;
     Position bestMove = moves.first;
@@ -119,12 +138,17 @@ class AIPlayer {
 
       // Bonus for captures
       final captured = newState.capturesFor(player) - state.capturesFor(player);
-      score += captured * 80;
+      score += captured * 100;
 
-      // Bonus for center proximity
-      final centerDist = move.distanceTo(
-          const Position(Constants.boardCenter, Constants.boardCenter));
-      score += (10 - centerDist).clamp(0, 10).toDouble();
+      // Bonus for center proximity (early game)
+      if (state.moveCount < 10) {
+        final centerDist = move.distanceTo(
+            const Position(Constants.boardCenter, Constants.boardCenter));
+        score += (10 - centerDist).clamp(0, 10).toDouble() * 2;
+      }
+
+      // Bonus for creating shapes
+      score += _evaluateMoveShapes(state, move, player);
 
       // Add randomness to avoid repetitive play
       score += _random.nextDouble() * 5;
@@ -138,13 +162,107 @@ class AIPlayer {
     return bestMove;
   }
 
+  /// Evaluate the shapes a move would create (for move scoring).
+  double _evaluateMoveShapes(GameState state, Position move, StoneType player) {
+    final testBoard = state.board.map((r) => List<StoneType>.from(r)).toList();
+    testBoard[move.row][move.col] = player;
+    final shapes = PenteEngine.detectShapes(testBoard, player);
+
+    double bonus = 0;
+    for (final shape in shapes) {
+      // Only count shapes that involve the new stone
+      if (!shape.positions.contains(move)) continue;
+
+      switch (shape.type) {
+        case ShapeType.openTessera:
+          bonus += 5000;
+          break;
+        case ShapeType.closedTessera:
+        case ShapeType.stretchTessera:
+          bonus += 2000;
+          break;
+        case ShapeType.openTria:
+          bonus += 400;
+          break;
+        case ShapeType.stretchTria:
+          bonus += 300;
+          break;
+        case ShapeType.closedTria:
+          bonus += 80;
+          break;
+        case ShapeType.stretchTwo:
+          bonus += 25; // Prefer stretch twos (safer than pairs)
+          break;
+        case ShapeType.pair:
+          bonus += 10;
+          break;
+        case ShapeType.five:
+          bonus += 100000;
+          break;
+      }
+    }
+
+    // Penalty for creating vulnerable pairs
+    final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
+    for (final dir in Constants.directions) {
+      final nr = move.row + dir[0];
+      final nc = move.col + dir[1];
+      if (nr >= 0 && nr < Constants.boardSize &&
+          nc >= 0 && nc < Constants.boardSize &&
+          testBoard[nr][nc] == player) {
+        // Check if this creates a vulnerable pair
+        final beforeR = move.row - dir[0];
+        final beforeC = move.col - dir[1];
+        final afterR = nr + dir[0];
+        final afterC = nc + dir[1];
+
+        if (beforeR >= 0 && beforeR < Constants.boardSize &&
+            beforeC >= 0 && beforeC < Constants.boardSize &&
+            afterR >= 0 && afterR < Constants.boardSize &&
+            afterC >= 0 && afterC < Constants.boardSize) {
+          if ((testBoard[beforeR][beforeC] == opponent &&
+                  testBoard[afterR][afterC] == StoneType.none) ||
+              (testBoard[beforeR][beforeC] == StoneType.none &&
+                  testBoard[afterR][afterC] == opponent)) {
+            bonus -= 50; // Penalty for vulnerable pair
+          }
+        }
+      }
+      // Also check in negative direction
+      final nr2 = move.row - dir[0];
+      final nc2 = move.col - dir[1];
+      if (nr2 >= 0 && nr2 < Constants.boardSize &&
+          nc2 >= 0 && nc2 < Constants.boardSize &&
+          testBoard[nr2][nc2] == player) {
+        final beforeR = nr2 - dir[0];
+        final beforeC = nc2 - dir[1];
+        final afterR = move.row + dir[0];
+        final afterC = move.col + dir[1];
+
+        if (beforeR >= 0 && beforeR < Constants.boardSize &&
+            beforeC >= 0 && beforeC < Constants.boardSize &&
+            afterR >= 0 && afterR < Constants.boardSize &&
+            afterC >= 0 && afterC < Constants.boardSize) {
+          if ((testBoard[beforeR][beforeC] == opponent &&
+                  testBoard[afterR][afterC] == StoneType.none) ||
+              (testBoard[beforeR][beforeC] == StoneType.none &&
+                  testBoard[afterR][afterC] == opponent)) {
+            bonus -= 50;
+          }
+        }
+      }
+    }
+
+    return bonus;
+  }
+
   /// Minimax search with alpha-beta pruning.
   Position _minimaxSearch(GameState state, List<Position> moves, {int depth = 2}) {
     final player = state.currentPlayer;
     double bestScore = double.negativeInfinity;
     Position bestMove = moves.first;
 
-    // Limit moves for performance
+    // Limit and prioritize moves for performance
     final candidateMoves = _prioritizeMoves(state, moves).take(15).toList();
 
     for (final move in candidateMoves) {
@@ -203,6 +321,8 @@ class AIPlayer {
   /// Sort moves by rough score for better alpha-beta pruning.
   List<Position> _prioritizeMoves(GameState state, List<Position> moves) {
     final player = state.currentPlayer;
+    final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
+
     final scored = moves.map((m) {
       final newState = PenteEngine.makeMove(state, m);
       double score = 0;
@@ -212,7 +332,41 @@ class AIPlayer {
 
       // Captures
       final cap = newState.capturesFor(player) - state.capturesFor(player);
-      score += cap * 100;
+      score += cap * 200;
+
+      // Check if move creates strong shapes
+      final testBoard = state.board.map((r) => List<StoneType>.from(r)).toList();
+      testBoard[m.row][m.col] = player;
+      final shapes = PenteEngine.detectShapes(testBoard, player);
+      for (final shape in shapes) {
+        if (!shape.positions.contains(m)) continue;
+        switch (shape.type) {
+          case ShapeType.openTessera:
+            score += 5000;
+            break;
+          case ShapeType.closedTessera:
+          case ShapeType.stretchTessera:
+            score += 1500;
+            break;
+          case ShapeType.openTria:
+            score += 400;
+            break;
+          case ShapeType.stretchTria:
+            score += 300;
+            break;
+          default:
+            break;
+        }
+      }
+
+      // Check if move blocks opponent's shapes
+      final oppTestBoard = state.board.map((r) => List<StoneType>.from(r)).toList();
+      oppTestBoard[m.row][m.col] = opponent;
+      final oppShapes = PenteEngine.detectShapes(oppTestBoard, opponent);
+      for (final shape in oppShapes) {
+        if (shape.type == ShapeType.openTessera) score += 3000;
+        if (shape.type == ShapeType.openTria) score += 200;
+      }
 
       // Center proximity
       score += (9 - m.distanceTo(

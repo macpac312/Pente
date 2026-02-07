@@ -263,6 +263,14 @@ class CoachPanelWidget extends StatelessWidget {
         return NeonTheme.neonOrange;
       case HintType.vulnerablePair:
         return NeonTheme.neonYellow;
+      case HintType.openTessera:
+        return NeonTheme.neonGreen;
+      case HintType.openTria:
+        return NeonTheme.neonCyan;
+      case HintType.stretchTria:
+        return NeonTheme.neonPurple;
+      case HintType.wedge:
+        return NeonTheme.neonOrange;
       case HintType.buildLine:
         return NeonTheme.neonCyan;
     }
@@ -278,6 +286,14 @@ class CoachPanelWidget extends StatelessWidget {
         return Icons.gps_fixed;
       case HintType.vulnerablePair:
         return Icons.shield;
+      case HintType.openTessera:
+        return Icons.auto_awesome;
+      case HintType.openTria:
+        return Icons.change_history;
+      case HintType.stretchTria:
+        return Icons.unfold_more;
+      case HintType.wedge:
+        return Icons.compress;
       case HintType.buildLine:
         return Icons.timeline;
     }
@@ -293,6 +309,14 @@ class CoachPanelWidget extends StatelessWidget {
         return 'CAPTURE';
       case HintType.vulnerablePair:
         return 'VULNERABLE';
+      case HintType.openTessera:
+        return 'OPEN TESSERA';
+      case HintType.openTria:
+        return 'OPEN TRIA';
+      case HintType.stretchTria:
+        return 'STRETCH TRIA';
+      case HintType.wedge:
+        return 'WEDGE';
       case HintType.buildLine:
         return 'BUILD LINE';
     }

@@ -26,8 +26,8 @@ lib/
 │   ├── move_record.dart       # Move history record with chess-style notation
 │   └── training_puzzle.dart   # Puzzle definition model
 ├── engine/
-│   ├── pente_engine.dart      # Game rules, validation, captures, win detection, coach analysis
-│   ├── ai_player.dart         # AI with 4 difficulty levels (minimax + alpha-beta)
+│   ├── pente_engine.dart      # Game rules, validation, captures, win detection, shape detection, coach analysis
+│   ├── ai_player.dart         # AI with 4 difficulty levels (minimax + alpha-beta + shape awareness)
 │   └── training_data.dart     # 17 training puzzles across 4 categories
 ├── screens/
 │   ├── home_screen.dart       # Main menu with animated glow title, difficulty selector
@@ -82,9 +82,11 @@ flutter analyze              # Run static analysis
 - **Immutable state:** GameState uses `copyWith()` for all mutations
 - **Engine is stateless:** All PenteEngine methods are static, take state as input
 - **Responsive layout:** Wide (>900px) shows side panel; narrow uses bottom tabs
-- **Coach integration:** PenteEngine.analyzePosition() returns prioritized CoachHints
-- **AI:** 4 difficulty levels with minimax + alpha-beta pruning, async via Future
-- **Pente Academy:** Modal bottom sheet with expandable learning topics
+- **Pattern detection:** 5-cell window scanning with bitmask patterns for shape classification
+- **Shape types:** ShapeType enum: five, openTessera, closedTessera, stretchTessera, openTria, closedTria, stretchTria, stretchTwo, pair
+- **Coach integration:** PenteEngine.analyzePosition() returns prioritized CoachHints with shape-specific advice
+- **AI:** 4 difficulty levels with minimax + alpha-beta pruning + shape-aware evaluation, async via Future
+- **Pente Academy:** Modal bottom sheet with 16 expandable lessons across 5 sections (Basics, Basic Shapes, Advanced Shapes, Capture Tactics, Strategy)
 
 ## Neon Theme System
 
@@ -100,7 +102,7 @@ All neon styling is in `neon_theme.dart` (matches Neon Chess exactly):
 
 ## Key Design Decisions
 
-- Board uses Column/Row of Container cells (not CustomPainter) for simplicity
+- Board uses Column/Row of Container cells with CustomPainter for grid lines + tournament boundary
 - Stones use `RadialGradient` + multi-layer `BoxShadow` for neon glow effect
 - AI runs asynchronously via `Future` to avoid blocking UI
 - Training puzzles are static data (no network required)
