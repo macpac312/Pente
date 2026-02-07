@@ -99,7 +99,7 @@ class SettingsScreen extends StatelessWidget {
       child: Text(
         title,
         style: TextStyle(
-          fontFamily: 'Orbitron',
+          fontFamily: NeonTheme.fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: color,
@@ -255,7 +255,7 @@ class SettingsScreen extends StatelessWidget {
                       child: Text(
                         _diffName(diff),
                         style: TextStyle(
-                          fontFamily: 'Orbitron',
+                          fontFamily: NeonTheme.fontFamily,
                           fontSize: 10,
                           fontWeight:
                               isSelected ? FontWeight.bold : FontWeight.normal,

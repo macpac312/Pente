@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen>
         return Text(
           'PENTE',
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: NeonTheme.fontFamily,
             fontSize: 52,
             fontWeight: FontWeight.bold,
             color: accent,
@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen>
     return Text(
       'NEON EDITION',
       style: TextStyle(
-        fontFamily: 'Orbitron',
+        fontFamily: NeonTheme.fontFamily,
         fontSize: 14,
         letterSpacing: 8,
         color: accent.withOpacity(0.5),
@@ -205,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen>
         Text(
           'A STRATEGY BOARD GAME',
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: NeonTheme.fontFamily,
             fontSize: 9,
             letterSpacing: 4,
             color: Colors.white.withOpacity(0.2),

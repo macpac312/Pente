@@ -33,7 +33,7 @@ class MoveHistory extends StatelessWidget {
             child: Text(
               'MOVES',
               style: TextStyle(
-                fontFamily: 'Orbitron',
+                fontFamily: NeonTheme.fontFamily,
                 fontSize: 10,
                 color: settings.accentColor.withOpacity(0.6),
               ),
@@ -62,7 +62,7 @@ class MoveHistory extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         color: color.withOpacity(0.9),
-                        fontFamily: 'Orbitron',
+                        fontFamily: NeonTheme.fontFamily,
                       ),
                     ),
                   );

@@ -82,7 +82,7 @@ class _PlayerInfo extends StatelessWidget {
               Text(
                 name,
                 style: TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: NeonTheme.fontFamily,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: isActive || isWinner ? color : color.withOpacity(0.5),
@@ -134,7 +134,7 @@ class _PlayerInfo extends StatelessWidget {
               child: Text(
                 'WINNER!',
                 style: TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: NeonTheme.fontFamily,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: NeonTheme.neonYellow,
@@ -197,7 +197,7 @@ class _GameStatus extends StatelessWidget {
         Text(
           status,
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: NeonTheme.fontFamily,
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: statusColor,

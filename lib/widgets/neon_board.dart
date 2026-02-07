@@ -299,7 +299,7 @@ class _BoardPainter extends CustomPainter {
       final textStyle = TextStyle(
         color: accentColor.withOpacity(0.4),
         fontSize: cellSize * 0.35,
-        fontFamily: 'Orbitron',
+        fontFamily: NeonTheme.fontFamily,
       );
 
       for (int i = 0; i < Constants.boardSize; i++) {

@@ -22,9 +22,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  fonts:
-    - family: Orbitron
-      fonts:
-        - asset: assets/fonts/Orbitron-Regular.ttf
-        - asset: assets/fonts/Orbitron-Bold.ttf
-          weight: 700

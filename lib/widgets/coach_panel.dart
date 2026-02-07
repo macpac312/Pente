@@ -36,7 +36,7 @@ class CoachPanel extends StatelessWidget {
                 Text(
                   'COACH',
                   style: TextStyle(
-                    fontFamily: 'Orbitron',
+                    fontFamily: NeonTheme.fontFamily,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: NeonTheme.neonGreen,

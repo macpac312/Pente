@@ -110,7 +110,7 @@ class RulesScreen extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: NeonTheme.fontFamily,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: color,

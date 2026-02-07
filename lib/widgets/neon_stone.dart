@@ -148,7 +148,7 @@ class _NeonStoneState extends State<NeonStone>
                       fontSize: widget.size * 0.28,
                       fontWeight: FontWeight.bold,
                       color: Colors.white.withOpacity(0.9),
-                      fontFamily: 'Orbitron',
+                      fontFamily: NeonTheme.fontFamily,
                     ),
                   ),
                 )

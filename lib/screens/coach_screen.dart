@@ -98,7 +98,7 @@ class CoachScreen extends StatelessWidget {
           Text(
             'PENTE COACH',
             style: TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: NeonTheme.fontFamily,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: NeonTheme.neonGreen,
@@ -149,7 +149,7 @@ class CoachScreen extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Orbitron',
+                    fontFamily: NeonTheme.fontFamily,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -180,7 +180,7 @@ class CoachScreen extends StatelessWidget {
         Text(
           'AI OPPONENT LEVEL',
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: NeonTheme.fontFamily,
             fontSize: 12,
             color: NeonTheme.neonGreen.withOpacity(0.7),
           ),
@@ -211,7 +211,7 @@ class CoachScreen extends StatelessWidget {
                     child: Text(
                       _difficultyName(diff),
                       style: TextStyle(
-                        fontFamily: 'Orbitron',
+                        fontFamily: NeonTheme.fontFamily,
                         fontSize: 9,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         color: isSelected ? color : color.withOpacity(0.4),

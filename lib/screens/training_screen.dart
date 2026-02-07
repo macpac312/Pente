@@ -76,7 +76,7 @@ class TrainingScreen extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: 'Orbitron',
+                  fontFamily: NeonTheme.fontFamily,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: color,
@@ -142,7 +142,7 @@ class TrainingScreen extends StatelessWidget {
                           Text(
                             puzzle.title,
                             style: TextStyle(
-                              fontFamily: 'Orbitron',
+                              fontFamily: NeonTheme.fontFamily,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: color,
@@ -300,7 +300,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                   Text(
                     'CORRECT!',
                     style: TextStyle(
-                      fontFamily: 'Orbitron',
+                      fontFamily: NeonTheme.fontFamily,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: NeonTheme.neonGreen,

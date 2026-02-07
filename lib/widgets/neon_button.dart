@@ -97,7 +97,7 @@ class _NeonButtonState extends State<NeonButton>
                 Text(
                   widget.text,
                   style: TextStyle(
-                    fontFamily: 'Orbitron',
+                    fontFamily: NeonTheme.fontFamily,
                     fontSize: widget.fontSize,
                     fontWeight: FontWeight.bold,
                     color: color,

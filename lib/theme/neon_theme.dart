@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class NeonTheme {
   // Neon color palette
@@ -20,7 +21,36 @@ class NeonTheme {
   static const Color player1Color = neonCyan;
   static const Color player2Color = neonPink;
 
+  // Font family name loaded via google_fonts
+  static String get fontFamily => GoogleFonts.orbitron().fontFamily!;
+
   static ThemeData darkTheme(Color accent) {
+    final orbitronTheme = GoogleFonts.orbitronTextTheme(
+      const TextTheme(
+        headlineLarge: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 14,
+          color: Colors.white70,
+        ),
+        bodyLarge: TextStyle(fontSize: 16, color: Colors.white),
+        bodyMedium: TextStyle(fontSize: 14, color: Colors.white70),
+      ),
+    );
+
     return ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: darkBg,
@@ -35,8 +65,7 @@ class NeonTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
-          fontFamily: 'Orbitron',
+        titleTextStyle: GoogleFonts.orbitron(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: accent,
@@ -55,33 +84,7 @@ class NeonTheme {
           side: BorderSide(color: accent.withOpacity(0.3), width: 1),
         ),
       ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          fontFamily: 'Orbitron',
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        headlineMedium: TextStyle(
-          fontFamily: 'Orbitron',
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        titleLarge: TextStyle(
-          fontFamily: 'Orbitron',
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        titleMedium: TextStyle(
-          fontFamily: 'Orbitron',
-          fontSize: 14,
-          color: Colors.white70,
-        ),
-        bodyLarge: TextStyle(fontSize: 16, color: Colors.white),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.white70),
-      ),
+      textTheme: orbitronTheme,
       iconTheme: IconThemeData(color: accent),
       dividerColor: accent.withOpacity(0.2),
     );

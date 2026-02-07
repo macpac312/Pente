@@ -170,7 +170,7 @@ class GameScreen extends StatelessWidget {
           Text(
             winnerName,
             style: TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: NeonTheme.fontFamily,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: color,
@@ -181,7 +181,7 @@ class GameScreen extends StatelessWidget {
           Text(
             winType,
             style: TextStyle(
-              fontFamily: 'Orbitron',
+              fontFamily: NeonTheme.fontFamily,
               fontSize: 11,
               color: color.withOpacity(0.7),
               letterSpacing: 3,
@@ -222,7 +222,7 @@ class GameScreen extends StatelessWidget {
         title: Text(
           'NEW GAME?',
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: NeonTheme.fontFamily,
             color: NeonTheme.neonCyan,
             fontSize: 18,
           ),
@@ -265,7 +265,7 @@ class GameScreen extends StatelessWidget {
         title: Text(
           'RESIGN?',
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: NeonTheme.fontFamily,
             color: NeonTheme.neonRed,
             fontSize: 18,
           ),
@@ -315,7 +315,7 @@ class GameScreen extends StatelessWidget {
         title: Text(
           'LEAVE GAME?',
           style: TextStyle(
-            fontFamily: 'Orbitron',
+            fontFamily: NeonTheme.fontFamily,
             color: NeonTheme.neonYellow,
             fontSize: 18,
           ),
