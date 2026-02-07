@@ -1,136 +1,135 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class NeonTheme {
-  // Neon color palette
+  // Core neon colors (matching chess)
+  static const Color neonGreen = Color(0xFF00FF41);
   static const Color neonCyan = Color(0xFF00FFFF);
-  static const Color neonPink = Color(0xFFFF00FF);
-  static const Color neonGreen = Color(0xFF39FF14);
-  static const Color neonBlue = Color(0xFF4D4DFF);
+  static const Color neonMagenta = Color(0xFFFF00FF);
+  static const Color neonBlue = Color(0xFF4466FF);
+  static const Color neonPink = Color(0xFFFF1493);
   static const Color neonOrange = Color(0xFFFF6600);
   static const Color neonYellow = Color(0xFFFFFF00);
-  static const Color neonPurple = Color(0xFFBF00FF);
+  static const Color neonPurple = Color(0xFF9D00FF);
   static const Color neonRed = Color(0xFFFF0040);
 
-  static const Color darkBg = Color(0xFF0A0A1A);
-  static const Color darkSurface = Color(0xFF12122A);
-  static const Color darkCard = Color(0xFF1A1A3E);
-  static const Color gridLine = Color(0xFF2A2A5A);
+  // Background colors
+  static const Color darkBg = Color(0xFF0A0A0F);
+  static const Color darkerBg = Color(0xFF050508);
+  static const Color cardBg = Color(0xFF12121A);
+  static const Color surfaceBg = Color(0xFF1A1A25);
+
+  // Board colors
+  static const Color gridLine = Color(0xFF1E1E30);
+  static const Color gridBg = Color(0xFF0F0F1A);
+
+  // Text colors
+  static const Color textPrimary = Color(0xFFE0E0E0);
+  static const Color textSecondary = Color(0xFF808090);
 
   // Player colors
   static const Color player1Color = neonCyan;
-  static const Color player2Color = neonPink;
+  static const Color player1Glow = neonCyan;
+  static const Color player2Color = Color(0xFFFF80FF);
+  static const Color player2Glow = neonMagenta;
 
-  // Font family name loaded via google_fonts
-  static String get fontFamily => GoogleFonts.orbitron().fontFamily!;
-
-  static ThemeData darkTheme(Color accent) {
-    final orbitronTheme = GoogleFonts.orbitronTextTheme(
-      const TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 14,
-          color: Colors.white70,
-        ),
-        bodyLarge: TextStyle(fontSize: 16, color: Colors.white),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.white70),
-      ),
-    );
-
-    return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: darkBg,
-      primaryColor: accent,
-      colorScheme: ColorScheme.dark(
-        primary: accent,
-        secondary: neonPink,
-        surface: darkSurface,
-        error: neonRed,
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: GoogleFonts.orbitron(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: accent,
-          shadows: [
-            Shadow(color: accent.withOpacity(0.8), blurRadius: 12),
-            Shadow(color: accent.withOpacity(0.4), blurRadius: 24),
-          ],
-        ),
-        iconTheme: IconThemeData(color: accent),
-      ),
-      cardTheme: CardThemeData(
-        color: darkCard,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: accent.withOpacity(0.3), width: 1),
-        ),
-      ),
-      textTheme: orbitronTheme,
-      iconTheme: IconThemeData(color: accent),
-      dividerColor: accent.withOpacity(0.2),
+  static BoxShadow neonGlow(Color color, {double blur = 8, double spread = 1}) {
+    return BoxShadow(
+      color: color.withAlpha(100),
+      blurRadius: blur,
+      spreadRadius: spread,
     );
   }
 
-  // Neon glow box decoration
-  static BoxDecoration neonBox({
-    required Color color,
-    double glowRadius = 8,
-    double borderWidth = 1.5,
-    double borderRadius = 16,
-  }) {
-    return BoxDecoration(
-      color: darkCard,
-      borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(color: color.withOpacity(0.6), width: borderWidth),
-      boxShadow: [
-        BoxShadow(
-          color: color.withOpacity(0.3),
-          blurRadius: glowRadius,
-          spreadRadius: 1,
-        ),
-        BoxShadow(
-          color: color.withOpacity(0.1),
-          blurRadius: glowRadius * 2,
-          spreadRadius: 2,
-        ),
-      ],
-    );
-  }
-
-  // Neon text shadow
-  static List<Shadow> neonTextShadow(Color color, {double intensity = 1.0}) {
+  static List<BoxShadow> neonGlowMultiple(Color color) {
     return [
-      Shadow(color: color.withOpacity(0.8 * intensity), blurRadius: 8),
-      Shadow(color: color.withOpacity(0.4 * intensity), blurRadius: 16),
-      Shadow(color: color.withOpacity(0.2 * intensity), blurRadius: 32),
+      BoxShadow(color: color.withAlpha(60), blurRadius: 4, spreadRadius: 0),
+      BoxShadow(color: color.withAlpha(40), blurRadius: 12, spreadRadius: 2),
+      BoxShadow(color: color.withAlpha(20), blurRadius: 24, spreadRadius: 4),
     ];
   }
 
-  // Neon gradient
-  static LinearGradient neonGradient(Color color1, Color color2) {
-    return LinearGradient(
-      colors: [color1.withOpacity(0.8), color2.withOpacity(0.8)],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+  static ThemeData get themeData {
+    return ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: darkBg,
+      primaryColor: neonCyan,
+      colorScheme: const ColorScheme.dark(
+        primary: neonCyan,
+        secondary: neonMagenta,
+        surface: cardBg,
+        onPrimary: darkBg,
+        onSecondary: darkBg,
+        onSurface: textPrimary,
+        error: Color(0xFFFF4444),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: darkerBg,
+        foregroundColor: neonCyan,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: neonCyan,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 3,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: cardBg,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: neonCyan.withAlpha(40)),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: neonCyan.withAlpha(30),
+          foregroundColor: neonCyan,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: neonCyan.withAlpha(120)),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: neonMagenta,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          side: BorderSide(color: neonMagenta.withAlpha(120)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: neonGreen,
+        ),
+      ),
+      iconTheme: const IconThemeData(color: neonCyan),
+      dividerTheme: DividerThemeData(color: neonCyan.withAlpha(30)),
+      dialogTheme: DialogThemeData(
+        backgroundColor: cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: neonCyan.withAlpha(60)),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: cardBg,
+        contentTextStyle: const TextStyle(color: textPrimary),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: neonGreen.withAlpha(100)),
+        ),
+      ),
     );
   }
 }

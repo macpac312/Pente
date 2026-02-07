@@ -1,156 +1,260 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../engine/pente_engine.dart';
-import '../providers/game_provider.dart';
 import '../theme/neon_theme.dart';
 
-class CoachPanel extends StatelessWidget {
-  const CoachPanel({super.key});
+class CoachPanelWidget extends StatelessWidget {
+  final List<CoachHint> hints;
+  final bool isThinking;
+  final CoachHint? currentHighlight;
+  final VoidCallback onGetTip;
+  final VoidCallback onSuggestMove;
+  final VoidCallback onLearn;
+  final void Function(CoachHint) onHintTap;
+
+  const CoachPanelWidget({
+    super.key,
+    required this.hints,
+    this.isThinking = false,
+    this.currentHighlight,
+    required this.onGetTip,
+    required this.onSuggestMove,
+    required this.onLearn,
+    required this.onHintTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final game = context.watch<GameProvider>();
-
-    if (!game.coachEnabled || game.coachHints.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      constraints: const BoxConstraints(maxHeight: 140),
-      decoration: NeonTheme.neonBox(
-        color: NeonTheme.neonGreen,
-        glowRadius: 6,
-        borderRadius: 12,
+      decoration: BoxDecoration(
+        color: NeonTheme.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: NeonTheme.neonGreen.withAlpha(60),
+          width: 1,
+        ),
+        boxShadow: [
+          NeonTheme.neonGlow(NeonTheme.neonGreen, blur: 6, spread: 0),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
             child: Row(
               children: [
                 Icon(Icons.school, color: NeonTheme.neonGreen, size: 16),
                 const SizedBox(width: 6),
                 Text(
-                  'COACH',
+                  'PENTE COACH',
                   style: TextStyle(
-                    fontFamily: NeonTheme.fontFamily,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: NeonTheme.neonGreen,
-                    shadows: NeonTheme.neonTextShadow(
-                        NeonTheme.neonGreen, intensity: 0.4),
+                    letterSpacing: 2,
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  '${game.coachHints.length} hint${game.coachHints.length > 1 ? "s" : ""}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white.withOpacity(0.4),
+                if (isThinking)
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation(NeonTheme.neonGreen),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
-          Flexible(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              shrinkWrap: true,
-              itemCount: game.coachHints.length.clamp(0, 5),
-              itemBuilder: (context, index) {
-                final hint = game.coachHints[index];
-                return _HintTile(
-                  hint: hint,
-                  isHighlighted: game.highlightedHint == hint.position,
-                  onTap: () {
-                    if (game.highlightedHint == hint.position) {
-                      game.clearHighlight();
-                    } else {
-                      game.highlightHint(hint);
-                    }
-                  },
-                );
-              },
+
+          Divider(
+            height: 1,
+            color: NeonTheme.neonGreen.withAlpha(30),
+          ),
+
+          // Tip content area
+          if (!isThinking && hints.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.touch_app,
+                    size: 16,
+                    color: NeonTheme.textSecondary.withAlpha(120),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tap a button below for coaching advice...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                        color: NeonTheme.textSecondary.withAlpha(120),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (!isThinking && hints.isNotEmpty)
+            Flexible(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                shrinkWrap: true,
+                itemCount: hints.length.clamp(0, 5),
+                itemBuilder: (context, index) {
+                  final hint = hints[index];
+                  final isHighlighted = currentHighlight == hint;
+                  final color = _hintColor(hint.type);
+
+                  return GestureDetector(
+                    onTap: () => onHintTap(hint),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isHighlighted
+                            ? color.withAlpha(30)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: isHighlighted
+                            ? Border.all(
+                                color: color.withAlpha(80), width: 1)
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _hintIcon(hint.type),
+                            size: 16,
+                            color: color,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _hintTitle(hint.type),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: color,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                Text(
+                                  hint.message,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isHighlighted
+                                        ? color
+                                        : NeonTheme.textPrimary
+                                            .withAlpha(180),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+          Divider(
+            height: 1,
+            color: NeonTheme.neonGreen.withAlpha(30),
+          ),
+
+          // 3 action buttons at bottom
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildActionButton(
+                    icon: Icons.lightbulb_outline,
+                    label: 'Tip',
+                    color: NeonTheme.neonGreen,
+                    onTap: onGetTip,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildActionButton(
+                    icon: Icons.place,
+                    label: 'Hint',
+                    color: NeonTheme.neonCyan,
+                    onTap: onSuggestMove,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildActionButton(
+                    icon: Icons.menu_book,
+                    label: 'Learn',
+                    color: NeonTheme.neonPurple,
+                    onTap: onLearn,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _HintTile extends StatelessWidget {
-  final CoachHint hint;
-  final bool isHighlighted;
-  final VoidCallback onTap;
-
-  const _HintTile({
-    required this.hint,
-    required this.isHighlighted,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _hintColor;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: isHighlighted ? color.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: isHighlighted
-              ? Border.all(color: color.withOpacity(0.4), width: 1)
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withOpacity(0.2),
-                border: Border.all(color: color.withOpacity(0.6), width: 1),
-              ),
-              child: Center(
-                child: Text(
-                  hint.icon,
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                hint.message,
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withAlpha(60), width: 1),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(height: 4),
+              Text(
+                label,
                 style: TextStyle(
-                  fontSize: 11,
-                  color: isHighlighted ? color : Colors.white.withOpacity(0.7),
+                  fontSize: 10,
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Icon(
-              isHighlighted ? Icons.visibility : Icons.visibility_off,
-              size: 14,
-              color: color.withOpacity(isHighlighted ? 0.8 : 0.3),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Color get _hintColor {
-    switch (hint.type) {
+  Color _hintColor(HintType type) {
+    switch (type) {
       case HintType.winningMove:
         return NeonTheme.neonGreen;
       case HintType.blockThreat:
@@ -161,6 +265,36 @@ class _HintTile extends StatelessWidget {
         return NeonTheme.neonYellow;
       case HintType.buildLine:
         return NeonTheme.neonCyan;
+    }
+  }
+
+  IconData _hintIcon(HintType type) {
+    switch (type) {
+      case HintType.winningMove:
+        return Icons.star;
+      case HintType.blockThreat:
+        return Icons.warning;
+      case HintType.captureOpportunity:
+        return Icons.gps_fixed;
+      case HintType.vulnerablePair:
+        return Icons.shield;
+      case HintType.buildLine:
+        return Icons.timeline;
+    }
+  }
+
+  String _hintTitle(HintType type) {
+    switch (type) {
+      case HintType.winningMove:
+        return 'WINNING MOVE';
+      case HintType.blockThreat:
+        return 'BLOCK THREAT';
+      case HintType.captureOpportunity:
+        return 'CAPTURE';
+      case HintType.vulnerablePair:
+        return 'VULNERABLE';
+      case HintType.buildLine:
+        return 'BUILD LINE';
     }
   }
 }

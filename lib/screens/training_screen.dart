@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../engine/training_data.dart';
 import '../models/training_puzzle.dart';
-import '../models/game_state.dart';
 import '../models/position.dart';
-import '../providers/settings_provider.dart';
 import '../theme/neon_theme.dart';
 import '../utils/constants.dart';
 import '../widgets/neon_board.dart';
-import '../widgets/neon_button.dart';
 
 class TrainingScreen extends StatelessWidget {
   const TrainingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-
     return Scaffold(
       backgroundColor: NeonTheme.darkBg,
       appBar: AppBar(title: const Text('TRAINING')),
@@ -25,147 +19,167 @@ class TrainingScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildCategoryHeader(
+            _buildCategorySection(
+              context,
               'CAPTURE PUZZLES',
               Icons.gps_fixed,
               NeonTheme.neonOrange,
               'Learn to capture opponent pairs',
+              TrainingData.capturePuzzles,
             ),
-            _buildPuzzleList(context, TrainingData.capturePuzzles, NeonTheme.neonOrange),
             const SizedBox(height: 24),
-            _buildCategoryHeader(
+            _buildCategorySection(
+              context,
               'DEFEND PUZZLES',
               Icons.shield,
               NeonTheme.neonBlue,
               'Protect your stones from capture',
+              TrainingData.defendPuzzles,
             ),
-            _buildPuzzleList(context, TrainingData.defendPuzzles, NeonTheme.neonBlue),
             const SizedBox(height: 24),
-            _buildCategoryHeader(
+            _buildCategorySection(
+              context,
               'WIN PUZZLES',
               Icons.emoji_events,
               NeonTheme.neonGreen,
               'Find the winning move',
+              TrainingData.winPuzzles,
             ),
-            _buildPuzzleList(context, TrainingData.winPuzzles, NeonTheme.neonGreen),
             const SizedBox(height: 24),
-            _buildCategoryHeader(
+            _buildCategorySection(
+              context,
               'THREAT PUZZLES',
               Icons.flash_on,
               NeonTheme.neonPurple,
               'Create powerful multi-threats',
+              TrainingData.threatPuzzles,
             ),
-            _buildPuzzleList(context, TrainingData.threatPuzzles, NeonTheme.neonPurple),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCategoryHeader(
-      String title, IconData icon, Color color, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCategorySection(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    String subtitle,
+    List<TrainingPuzzle> puzzles,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontFamily: NeonTheme.fontFamily,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  shadows: NeonTheme.neonTextShadow(color, intensity: 0.4),
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.4)),
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: NeonTheme.textSecondary,
+                      letterSpacing: 3,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: NeonTheme.textSecondary.withAlpha(100),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        ),
+        // Puzzle cards
+        ...puzzles.map((puzzle) => _buildPuzzleCard(context, puzzle, color)),
+      ],
     );
   }
 
-  Widget _buildPuzzleList(
-      BuildContext context, List<TrainingPuzzle> puzzles, Color color) {
-    return Column(
-      children: puzzles.map((puzzle) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PuzzleScreen(puzzle: puzzle, color: color),
-                ),
-              ),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: NeonTheme.neonBox(
-                  color: color.withOpacity(0.4),
-                  glowRadius: 3,
-                  borderRadius: 12,
-                ),
-                child: Row(
-                  children: [
-                    // Difficulty stars
-                    Row(
-                      children: List.generate(
-                        5,
-                        (i) => Icon(
-                          i < puzzle.difficulty
-                              ? Icons.star
-                              : Icons.star_border,
-                          size: 12,
-                          color: i < puzzle.difficulty
-                              ? color
-                              : color.withOpacity(0.2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            puzzle.title,
-                            style: TextStyle(
-                              fontFamily: NeonTheme.fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: color,
-                            ),
-                          ),
-                          Text(
-                            puzzle.description,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.white.withOpacity(0.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: color.withOpacity(0.5)),
-                  ],
-                ),
-              ),
+  Widget _buildPuzzleCard(
+      BuildContext context, TrainingPuzzle puzzle, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PuzzleScreen(puzzle: puzzle, color: color),
             ),
           ),
-        );
-      }).toList(),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: NeonTheme.cardBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: color.withAlpha(60),
+                width: 1,
+              ),
+              boxShadow: [
+                NeonTheme.neonGlow(color, blur: 4, spread: 0),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Difficulty stars
+                Row(
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      i < puzzle.difficulty ? Icons.star : Icons.star_border,
+                      size: 12,
+                      color: i < puzzle.difficulty
+                          ? color
+                          : color.withAlpha(50),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        puzzle.title,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        puzzle.description,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: NeonTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: color.withAlpha(120)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -215,7 +229,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
         _board[pos.row][pos.col] = StoneType.player1;
         _solved = true;
       } else {
-        // Wrong move - flash feedback
         _board[pos.row][pos.col] = StoneType.player1;
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
@@ -240,10 +253,16 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.all(12),
-            decoration: NeonTheme.neonBox(
-              color: widget.color,
-              glowRadius: 6,
-              borderRadius: 12,
+            decoration: BoxDecoration(
+              color: NeonTheme.cardBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: widget.color.withAlpha(60),
+                width: 1,
+              ),
+              boxShadow: [
+                NeonTheme.neonGlow(widget.color, blur: 6, spread: 1),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +281,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                     'Hint: Look at position ${_posNotation(widget.puzzle.solutionMove)}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: NeonTheme.neonYellow.withOpacity(0.7),
+                      color: NeonTheme.neonYellow.withAlpha(180),
                     ),
                   ),
                 ],
@@ -275,8 +294,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: NeonBoard(
-                interactive: false,
-                customBoard: _board,
+                board: _board,
+                interactive: true,
                 highlightPosition:
                     _showHint ? widget.puzzle.solutionMove : null,
                 onTap: _handleTap,
@@ -284,27 +303,32 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             ),
           ),
 
-          // Solution / Actions
+          // Solved banner
           if (_solved)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.all(12),
-              decoration: NeonTheme.neonBox(
-                color: NeonTheme.neonGreen,
-                glowRadius: 12,
-                borderRadius: 12,
+              decoration: BoxDecoration(
+                color: NeonTheme.cardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: NeonTheme.neonGreen.withAlpha(80),
+                  width: 1,
+                ),
+                boxShadow: [
+                  NeonTheme.neonGlow(NeonTheme.neonGreen, blur: 12, spread: 2),
+                ],
               ),
               child: Column(
                 children: [
                   Text(
                     'CORRECT!',
                     style: TextStyle(
-                      fontFamily: NeonTheme.fontFamily,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: NeonTheme.neonGreen,
-                      shadows: NeonTheme.neonTextShadow(NeonTheme.neonGreen),
+                      letterSpacing: 3,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -313,7 +337,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.7),
+                      color: NeonTheme.textPrimary.withAlpha(180),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -321,7 +345,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                     'Solved in $_attempts attempt${_attempts > 1 ? "s" : ""}',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.4),
+                      color: NeonTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -335,23 +359,25 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
               children: [
                 if (!_solved)
                   Expanded(
-                    child: NeonButton(
-                      text: 'SHOW HINT',
-                      icon: Icons.lightbulb_outline,
-                      color: NeonTheme.neonYellow,
-                      height: 44,
-                      fontSize: 12,
+                    child: ElevatedButton.icon(
                       onPressed: () => setState(() => _showHint = true),
+                      icon: const Icon(Icons.lightbulb_outline, size: 18),
+                      label: const Text('SHOW HINT'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: NeonTheme.neonYellow.withAlpha(30),
+                        foregroundColor: NeonTheme.neonYellow,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(
+                              color: NeonTheme.neonYellow.withAlpha(120)),
+                        ),
+                      ),
                     ),
                   ),
                 if (!_solved) const SizedBox(width: 12),
                 Expanded(
-                  child: NeonButton(
-                    text: _solved ? 'BACK' : 'RESET',
-                    icon: _solved ? Icons.arrow_back : Icons.refresh,
-                    color: widget.color,
-                    height: 44,
-                    fontSize: 12,
+                  child: ElevatedButton.icon(
                     onPressed: () {
                       if (_solved) {
                         Navigator.pop(context);
@@ -359,6 +385,21 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                         setState(() => _resetBoard());
                       }
                     },
+                    icon: Icon(
+                      _solved ? Icons.arrow_back : Icons.refresh,
+                      size: 18,
+                    ),
+                    label: Text(_solved ? 'BACK' : 'RESET'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.color.withAlpha(30),
+                      foregroundColor: widget.color,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                            color: widget.color.withAlpha(120)),
+                      ),
+                    ),
                   ),
                 ),
               ],

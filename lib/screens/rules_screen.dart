@@ -78,7 +78,7 @@ class RulesScreen extends StatelessWidget {
                 'Pente was created by Gary Gabrel in 1977',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withOpacity(0.3),
+                  color: NeonTheme.textSecondary.withAlpha(80),
                 ),
               ),
             ),
@@ -95,10 +95,16 @@ class RulesScreen extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
-      decoration: NeonTheme.neonBox(
-        color: color.withOpacity(0.4),
-        glowRadius: 4,
-        borderRadius: 12,
+      decoration: BoxDecoration(
+        color: NeonTheme.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withAlpha(40),
+          width: 1,
+        ),
+        boxShadow: [
+          NeonTheme.neonGlow(color, blur: 4, spread: 0),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,11 +116,10 @@ class RulesScreen extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: NeonTheme.fontFamily,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: color,
-                  shadows: NeonTheme.neonTextShadow(color, intensity: 0.3),
+                  letterSpacing: 2,
                 ),
               ),
             ],
@@ -124,8 +129,8 @@ class RulesScreen extends StatelessWidget {
             content,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.7),
-              height: 1.5,
+              color: NeonTheme.textPrimary,
+              height: 1.6,
             ),
           ),
         ],

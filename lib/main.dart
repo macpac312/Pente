@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'providers/game_provider.dart';
-import 'providers/settings_provider.dart';
-import 'app.dart';
+import 'theme/neon_theme.dart';
+import 'screens/home_screen.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.black,
-    ),
-  );
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => GameProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
-      ],
-      child: const NeonPenteApp(),
-    ),
-  );
+  runApp(const NeonPenteApp());
+}
+
+class NeonPenteApp extends StatelessWidget {
+  const NeonPenteApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Neon Pente',
+      debugShowCheckedModeBanner: false,
+      theme: NeonTheme.themeData,
+      home: const HomeScreen(),
+    );
+  }
 }

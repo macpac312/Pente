@@ -1,77 +1,105 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/game_provider.dart';
-import '../providers/settings_provider.dart';
+import '../models/move_record.dart';
 import '../theme/neon_theme.dart';
 import '../utils/constants.dart';
 
-class MoveHistory extends StatelessWidget {
-  const MoveHistory({super.key});
+class MoveHistoryWidget extends StatelessWidget {
+  final List<MoveRecord> moves;
+
+  const MoveHistoryWidget({
+    super.key,
+    required this.moves,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final game = context.watch<GameProvider>();
-    final settings = context.watch<SettingsProvider>();
-    final moves = game.state.moveHistory;
-
-    if (moves.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      constraints: const BoxConstraints(maxHeight: 80),
-      decoration: NeonTheme.neonBox(
-        color: settings.accentColor.withOpacity(0.5),
-        glowRadius: 4,
-        borderRadius: 12,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-            child: Text(
-              'MOVES',
-              style: TextStyle(
-                fontFamily: NeonTheme.fontFamily,
-                fontSize: 10,
-                color: settings.accentColor.withOpacity(0.6),
-              ),
-            ),
+    if (moves.isEmpty) {
+      return Center(
+        child: Text(
+          'No moves yet.',
+          style: TextStyle(
+            fontSize: 13,
+            fontStyle: FontStyle.italic,
+            color: NeonTheme.textSecondary,
           ),
-          Flexible(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
-              child: Row(
-                children: List.generate(moves.length, (index) {
-                  final move = moves[index];
-                  final isP1 = move.player == StoneType.player1;
-                  final color = isP1 ? settings.player1Color : settings.player2Color;
+        ),
+      );
+    }
 
-                  return Container(
-                    margin: const EdgeInsets.only(right: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      color: color.withOpacity(0.1),
-                      border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+    final pairCount = (moves.length / 2).ceil();
+    final lastPairIndex = pairCount - 1;
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: pairCount,
+      itemBuilder: (context, index) {
+        final moveNum = index + 1;
+        final p1Idx = index * 2;
+        final p2Idx = index * 2 + 1;
+        final isLastPair = index == lastPairIndex;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 1),
+          decoration: BoxDecoration(
+            color: isLastPair
+                ? NeonTheme.neonCyan.withAlpha(15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+            border: isLastPair
+                ? Border(
+                    left: BorderSide(
+                      color: NeonTheme.neonCyan.withAlpha(120),
+                      width: 2,
                     ),
-                    child: Text(
-                      '${move.moveNumber}. ${move.notation}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: color.withOpacity(0.9),
-                        fontFamily: NeonTheme.fontFamily,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
+                  )
+                : null,
           ),
-        ],
-      ),
+          padding: EdgeInsets.symmetric(
+            vertical: 3,
+            horizontal: isLastPair ? 8 : 4,
+          ),
+          child: Row(
+            children: [
+              // Move number
+              SizedBox(
+                width: 32,
+                child: Text(
+                  '$moveNum.',
+                  style: TextStyle(
+                    color: NeonTheme.textSecondary.withAlpha(120),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              // Player 1 move (cyan)
+              Expanded(
+                child: Text(
+                  moves[p1Idx].notation,
+                  style: TextStyle(
+                    color: NeonTheme.neonCyan,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              // Player 2 move (magenta)
+              if (p2Idx < moves.length)
+                Expanded(
+                  child: Text(
+                    moves[p2Idx].notation,
+                    style: TextStyle(
+                      color: NeonTheme.neonMagenta,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )
+              else
+                const Expanded(child: SizedBox()),
+            ],
+          ),
+        );
+      },
     );
   }
 }

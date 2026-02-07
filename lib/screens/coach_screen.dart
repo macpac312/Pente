@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/game_provider.dart';
-import '../providers/settings_provider.dart';
 import '../theme/neon_theme.dart';
 import '../utils/constants.dart';
-import '../widgets/neon_button.dart';
 import 'game_screen.dart';
 
-class CoachScreen extends StatelessWidget {
+class CoachScreen extends StatefulWidget {
   const CoachScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
+  State<CoachScreen> createState() => _CoachScreenState();
+}
 
+class _CoachScreenState extends State<CoachScreen> {
+  AIDifficulty _selectedDifficulty = AIDifficulty.medium;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: NeonTheme.darkBg,
       appBar: AppBar(title: const Text('COACH MODE')),
@@ -56,14 +57,9 @@ class CoachScreen extends StatelessWidget {
               NeonTheme.neonCyan,
             ),
             const SizedBox(height: 32),
-            _buildDifficultySelector(context, settings),
+            _buildDifficultySelector(),
             const SizedBox(height: 24),
-            NeonButton(
-              text: 'START COACHED GAME',
-              icon: Icons.play_arrow,
-              color: NeonTheme.neonGreen,
-              onPressed: () => _startCoachedGame(context, settings),
-            ),
+            _buildStartButton(),
             const SizedBox(height: 12),
             _buildTip(),
           ],
@@ -76,33 +72,43 @@ class CoachScreen extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: NeonTheme.neonBox(
-        color: NeonTheme.neonGreen,
-        glowRadius: 10,
-        borderRadius: 16,
+      decoration: BoxDecoration(
+        color: NeonTheme.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: NeonTheme.neonGreen.withAlpha(60),
+          width: 1,
+        ),
+        boxShadow: [
+          NeonTheme.neonGlow(NeonTheme.neonGreen, blur: 10, spread: 1),
+        ],
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.school,
-            size: 48,
-            color: NeonTheme.neonGreen,
-            shadows: [
-              Shadow(
-                color: NeonTheme.neonGreen.withOpacity(0.5),
-                blurRadius: 16,
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: NeonTheme.neonGreen.withAlpha(30),
+              border: Border.all(
+                color: NeonTheme.neonGreen.withAlpha(80),
+                width: 1,
               ),
-            ],
+            ),
+            child: Icon(
+              Icons.school,
+              size: 36,
+              color: NeonTheme.neonGreen,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             'PENTE COACH',
             style: TextStyle(
-              fontFamily: NeonTheme.fontFamily,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: NeonTheme.neonGreen,
-              shadows: NeonTheme.neonTextShadow(NeonTheme.neonGreen),
+              letterSpacing: 3,
             ),
           ),
           const SizedBox(height: 8),
@@ -112,7 +118,7 @@ class CoachScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.6),
+              color: NeonTheme.textSecondary,
             ),
           ),
         ],
@@ -124,10 +130,16 @@ class CoachScreen extends StatelessWidget {
       String title, String description, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: NeonTheme.neonBox(
-        color: color.withOpacity(0.4),
-        glowRadius: 4,
-        borderRadius: 12,
+      decoration: BoxDecoration(
+        color: NeonTheme.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withAlpha(40),
+          width: 1,
+        ),
+        boxShadow: [
+          NeonTheme.neonGlow(color, blur: 4, spread: 0),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,8 +148,8 @@ class CoachScreen extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.15),
-              border: Border.all(color: color.withOpacity(0.4), width: 1),
+              color: color.withAlpha(30),
+              border: Border.all(color: color.withAlpha(80), width: 1),
             ),
             child: Icon(icon, color: color, size: 22),
           ),
@@ -149,10 +161,10 @@ class CoachScreen extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: NeonTheme.fontFamily,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: color,
+                    letterSpacing: 1,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -160,7 +172,7 @@ class CoachScreen extends StatelessWidget {
                   description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.5),
+                    color: NeonTheme.textSecondary,
                     height: 1.4,
                   ),
                 ),
@@ -172,51 +184,83 @@ class CoachScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDifficultySelector(
-      BuildContext context, SettingsProvider settings) {
+  Widget _buildDifficultySelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'AI OPPONENT LEVEL',
           style: TextStyle(
-            fontFamily: NeonTheme.fontFamily,
             fontSize: 12,
-            color: NeonTheme.neonGreen.withOpacity(0.7),
+            color: NeonTheme.textSecondary,
+            letterSpacing: 3,
           ),
         ),
         const SizedBox(height: 10),
         Row(
           children: AIDifficulty.values.map((diff) {
-            final isSelected = settings.defaultDifficulty == diff;
+            final isSelected = _selectedDifficulty == diff;
             final color = _difficultyColor(diff);
+            final depth = _difficultyDepth(diff);
             return Expanded(
               child: GestureDetector(
-                onTap: () => settings.setDefaultDifficulty(diff),
+                onTap: () => setState(() => _selectedDifficulty = diff),
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 3),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: isSelected ? color.withOpacity(0.2) : NeonTheme.darkCard,
+                    color: isSelected
+                        ? color.withAlpha(40)
+                        : NeonTheme.cardBg,
                     border: Border.all(
-                      color: isSelected ? color : color.withOpacity(0.2),
+                      color: isSelected ? color : color.withAlpha(40),
                       width: isSelected ? 1.5 : 0.5,
                     ),
                     boxShadow: isSelected
-                        ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8)]
+                        ? [NeonTheme.neonGlow(color, blur: 8, spread: 1)]
                         : [],
                   ),
-                  child: Center(
-                    child: Text(
-                      _difficultyName(diff),
-                      style: TextStyle(
-                        fontFamily: NeonTheme.fontFamily,
-                        fontSize: 9,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? color : color.withOpacity(0.4),
+                  child: Column(
+                    children: [
+                      // Radio dot
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected ? color : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected ? color : color.withAlpha(80),
+                            width: 1.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [NeonTheme.neonGlow(color, blur: 4, spread: 0)]
+                              : [],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _difficultyName(diff),
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? color : color.withAlpha(100),
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Depth $depth',
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: isSelected
+                              ? color.withAlpha(150)
+                              : NeonTheme.textSecondary.withAlpha(80),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -227,21 +271,46 @@ class CoachScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildStartButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _startCoachedGame(),
+        icon: const Icon(Icons.play_arrow, size: 22),
+        label: const Text('START COACHED GAME'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: NeonTheme.neonGreen.withAlpha(30),
+          foregroundColor: NeonTheme.neonGreen,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: NeonTheme.neonGreen.withAlpha(120)),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTip() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: NeonTheme.neonYellow.withOpacity(0.05),
+        color: NeonTheme.neonYellow.withAlpha(12),
         border: Border.all(
-          color: NeonTheme.neonYellow.withOpacity(0.2),
+          color: NeonTheme.neonYellow.withAlpha(50),
           width: 0.5,
         ),
       ),
       child: Row(
         children: [
           Icon(Icons.info_outline,
-              color: NeonTheme.neonYellow.withOpacity(0.5), size: 16),
+              color: NeonTheme.neonYellow.withAlpha(120), size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -249,7 +318,7 @@ class CoachScreen extends StatelessWidget {
               'using the mortarboard icon in the top bar.',
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.white.withOpacity(0.4),
+                color: NeonTheme.textSecondary,
               ),
             ),
           ),
@@ -258,16 +327,15 @@ class CoachScreen extends StatelessWidget {
     );
   }
 
-  void _startCoachedGame(BuildContext context, SettingsProvider settings) {
-    final game = context.read<GameProvider>();
-    game.newGame(
-      mode: GameMode.pvAI,
-      difficulty: settings.defaultDifficulty,
-    );
-    game.toggleCoach();
+  void _startCoachedGame() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const GameScreen()),
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          difficulty: _selectedDifficulty,
+          mode: GameMode.pvAI,
+        ),
+      ),
     );
   }
 
@@ -284,6 +352,19 @@ class CoachScreen extends StatelessWidget {
     }
   }
 
+  int _difficultyDepth(AIDifficulty diff) {
+    switch (diff) {
+      case AIDifficulty.easy:
+        return 1;
+      case AIDifficulty.medium:
+        return 2;
+      case AIDifficulty.hard:
+        return 3;
+      case AIDifficulty.expert:
+        return 4;
+    }
+  }
+
   Color _difficultyColor(AIDifficulty diff) {
     switch (diff) {
       case AIDifficulty.easy:
@@ -297,4 +378,3 @@ class CoachScreen extends StatelessWidget {
     }
   }
 }
-

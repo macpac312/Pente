@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/game_provider.dart';
-import '../providers/settings_provider.dart';
 import '../theme/neon_theme.dart';
 import '../utils/constants.dart';
-import '../widgets/neon_button.dart';
 import 'game_screen.dart';
 import 'training_screen.dart';
 import 'coach_screen.dart';
@@ -20,60 +16,101 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _titleController;
-  late Animation<double> _titleGlow;
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
+  AIDifficulty _selectedDifficulty = AIDifficulty.medium;
 
   @override
   void initState() {
     super.initState();
-    _titleController = AnimationController(
-      duration: const Duration(seconds: 3),
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat(reverse: true);
-    _titleGlow = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _titleController, curve: Curves.easeInOut),
+    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
+  // --- Difficulty config ---
+
+  Color _difficultyColor(AIDifficulty d) {
+    switch (d) {
+      case AIDifficulty.easy:
+        return NeonTheme.neonGreen;
+      case AIDifficulty.medium:
+        return NeonTheme.neonCyan;
+      case AIDifficulty.hard:
+        return NeonTheme.neonOrange;
+      case AIDifficulty.expert:
+        return NeonTheme.neonPink;
+    }
+  }
+
+  String _difficultyName(AIDifficulty d) {
+    switch (d) {
+      case AIDifficulty.easy:
+        return 'Beginner';
+      case AIDifficulty.medium:
+        return 'Medium';
+      case AIDifficulty.hard:
+        return 'Hard';
+      case AIDifficulty.expert:
+        return 'Expert';
+    }
+  }
+
+  int _difficultyDots(AIDifficulty d) {
+    switch (d) {
+      case AIDifficulty.easy:
+        return 1;
+      case AIDifficulty.medium:
+        return 2;
+      case AIDifficulty.hard:
+        return 3;
+      case AIDifficulty.expert:
+        return 4;
+    }
+  }
+
+  // --- Build ---
+
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    final accent = settings.accentColor;
-
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              NeonTheme.darkBg,
-              NeonTheme.darkSurface,
-              NeonTheme.darkBg,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      backgroundColor: NeonTheme.darkBg,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 20),
-                  _buildTitle(accent),
+                  const SizedBox(height: 32),
+                  _buildTitle(),
                   const SizedBox(height: 8),
-                  _buildSubtitle(accent),
-                  const SizedBox(height: 50),
-                  _buildMenuButtons(context, accent),
-                  const SizedBox(height: 40),
-                  _buildFooter(accent),
+                  _buildSubtitle(),
+                  const SizedBox(height: 48),
+                  _buildDifficultySection(),
+                  const SizedBox(height: 32),
+                  _buildStartButton(),
+                  const SizedBox(height: 12),
+                  _buildPuzzlesButton(),
+                  const SizedBox(height: 12),
+                  _buildCoachButton(),
+                  const SizedBox(height: 12),
+                  _buildHowToPlayButton(),
+                  const SizedBox(height: 8),
+                  _buildSettingsButton(),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -83,28 +120,38 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildTitle(Color accent) {
+  // --- Title with dual cyan+magenta glow ---
+
+  Widget _buildTitle() {
     return AnimatedBuilder(
-      animation: _titleGlow,
+      animation: _glowAnimation,
       builder: (context, child) {
+        final g = _glowAnimation.value;
         return Text(
-          'PENTE',
+          '\u25C6 NEON PENTE \u25C6',
+          textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: NeonTheme.fontFamily,
-            fontSize: 52,
+            fontSize: 32,
             fontWeight: FontWeight.bold,
-            color: accent,
-            letterSpacing: 12,
+            letterSpacing: 4,
+            color: Colors.white,
             shadows: [
               Shadow(
-                  color: accent.withOpacity(0.8 * _titleGlow.value),
-                  blurRadius: 16),
+                color: NeonTheme.neonCyan.withAlpha((180 * g).round()),
+                blurRadius: 20,
+              ),
               Shadow(
-                  color: accent.withOpacity(0.5 * _titleGlow.value),
-                  blurRadius: 32),
+                color: NeonTheme.neonCyan.withAlpha((120 * g).round()),
+                blurRadius: 40,
+              ),
               Shadow(
-                  color: accent.withOpacity(0.3 * _titleGlow.value),
-                  blurRadius: 64),
+                color: NeonTheme.neonMagenta.withAlpha((120 * g).round()),
+                blurRadius: 30,
+              ),
+              Shadow(
+                color: NeonTheme.neonMagenta.withAlpha((80 * g).round()),
+                blurRadius: 60,
+              ),
             ],
           ),
         );
@@ -112,131 +159,295 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildSubtitle(Color accent) {
+  // --- Subtitle ---
+
+  Widget _buildSubtitle() {
     return Text(
-      'NEON EDITION',
+      'TRAIN  \u2022  PLAY  \u2022  IMPROVE',
       style: TextStyle(
-        fontFamily: NeonTheme.fontFamily,
-        fontSize: 14,
-        letterSpacing: 8,
-        color: accent.withOpacity(0.5),
-        shadows: NeonTheme.neonTextShadow(accent, intensity: 0.2),
+        fontSize: 12,
+        letterSpacing: 4,
+        color: NeonTheme.neonMagenta.withAlpha(180),
       ),
     );
   }
 
-  Widget _buildMenuButtons(BuildContext context, Color accent) {
-    return Column(
-      children: [
-        NeonButton(
-          text: 'VS COMPUTER',
-          icon: Icons.smart_toy,
-          color: NeonTheme.neonCyan,
-          onPressed: () => _startGame(context, GameMode.pvAI),
-        ),
-        const SizedBox(height: 14),
-        NeonButton(
-          text: 'VS PLAYER',
-          icon: Icons.people,
-          color: NeonTheme.neonPink,
-          onPressed: () => _startGame(context, GameMode.pvp),
-        ),
-        const SizedBox(height: 14),
-        NeonButton(
-          text: 'TRAINING',
-          icon: Icons.fitness_center,
-          color: NeonTheme.neonGreen,
-          onPressed: () => Navigator.push(
-            context,
-            _neonPageRoute(const TrainingScreen()),
-          ),
-        ),
-        const SizedBox(height: 14),
-        NeonButton(
-          text: 'COACH MODE',
-          icon: Icons.school,
-          color: NeonTheme.neonOrange,
-          onPressed: () => Navigator.push(
-            context,
-            _neonPageRoute(const CoachScreen()),
-          ),
-        ),
-        const SizedBox(height: 14),
-        NeonButton(
-          text: 'HOW TO PLAY',
-          icon: Icons.help_outline,
-          color: NeonTheme.neonPurple,
-          onPressed: () => Navigator.push(
-            context,
-            _neonPageRoute(const RulesScreen()),
-          ),
-        ),
-        const SizedBox(height: 14),
-        NeonButton(
-          text: 'SETTINGS',
-          icon: Icons.settings,
-          color: NeonTheme.neonBlue,
-          onPressed: () => Navigator.push(
-            context,
-            _neonPageRoute(const SettingsScreen()),
-          ),
-        ),
-      ],
-    );
-  }
+  // --- Difficulty selector ---
 
-  Widget _buildFooter(Color accent) {
+  Widget _buildDifficultySection() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 120,
-          height: 1,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.transparent,
-                accent.withOpacity(0.3),
-                Colors.transparent,
-              ],
-            ),
+        Text(
+          'DIFFICULTY',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 3,
+            color: NeonTheme.textSecondary,
           ),
         ),
         const SizedBox(height: 12),
-        Text(
-          'A STRATEGY BOARD GAME',
-          style: TextStyle(
-            fontFamily: NeonTheme.fontFamily,
-            fontSize: 9,
-            letterSpacing: 4,
-            color: Colors.white.withOpacity(0.2),
-          ),
-        ),
+        ...AIDifficulty.values.map(_buildDifficultyRow),
       ],
     );
   }
 
-  void _startGame(BuildContext context, GameMode mode) {
-    final settings = context.read<SettingsProvider>();
-    context.read<GameProvider>().newGame(
-          mode: mode,
-          difficulty: settings.defaultDifficulty,
-        );
-    Navigator.push(
-      context,
-      _neonPageRoute(const GameScreen()),
+  Widget _buildDifficultyRow(AIDifficulty difficulty) {
+    final isSelected = _selectedDifficulty == difficulty;
+    final color = _difficultyColor(difficulty);
+    final name = _difficultyName(difficulty);
+    final dots = _difficultyDots(difficulty);
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedDifficulty = difficulty),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withAlpha(20) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? color.withAlpha(150)
+                : NeonTheme.textSecondary.withAlpha(40),
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [NeonTheme.neonGlow(color, blur: 12, spread: 0)]
+              : [],
+        ),
+        child: Row(
+          children: [
+            // Radio dot
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? color : NeonTheme.textSecondary,
+                  width: 2,
+                ),
+                color: isSelected ? color : Colors.transparent,
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            // Name
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                letterSpacing: 1.5,
+                color: isSelected ? color : NeonTheme.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            // Depth dots
+            Row(
+              children: List.generate(4, (i) {
+                final filled = i < dots;
+                return Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(left: 4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? color : Colors.transparent,
+                    border: Border.all(
+                      color: filled
+                          ? color
+                          : NeonTheme.textSecondary.withAlpha(60),
+                      width: 1,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  PageRoute _neonPageRoute(Widget page) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => page,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
+  // --- Start Game button (green, glow animation) ---
+
+  Widget _buildStartButton() {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        final g = _glowAnimation.value;
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _startGame,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: NeonTheme.neonGreen.withAlpha(30),
+              foregroundColor: NeonTheme.neonGreen,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                  color: NeonTheme.neonGreen
+                      .withAlpha((120 + 80 * g).round()),
+                ),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'START GAME',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 3,
+                shadows: [
+                  Shadow(
+                    color: NeonTheme.neonGreen
+                        .withAlpha((100 * g).round()),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
-      transitionDuration: const Duration(milliseconds: 300),
+    );
+  }
+
+  // --- Puzzles button (purple, outlined) ---
+
+  Widget _buildPuzzlesButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TrainingScreen()),
+        ),
+        icon: Icon(Icons.extension, color: NeonTheme.neonPurple, size: 20),
+        label: Text(
+          'PUZZLES',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 2,
+            color: NeonTheme.neonPurple,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: BorderSide(color: NeonTheme.neonPurple.withAlpha(100)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Coach Mode button (green, outlined) ---
+
+  Widget _buildCoachButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CoachScreen()),
+        ),
+        icon: Icon(Icons.school, color: NeonTheme.neonGreen, size: 20),
+        label: Text(
+          'COACH MODE',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 2,
+            color: NeonTheme.neonGreen,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: BorderSide(color: NeonTheme.neonGreen.withAlpha(100)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- How to Play button (cyan, text) ---
+
+  Widget _buildHowToPlayButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RulesScreen()),
+        ),
+        icon: Icon(Icons.help_outline, color: NeonTheme.neonCyan, size: 20),
+        label: Text(
+          'HOW TO PLAY',
+          style: TextStyle(
+            fontSize: 14,
+            letterSpacing: 2,
+            color: NeonTheme.neonCyan,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Settings button (secondary, text) ---
+
+  Widget _buildSettingsButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+        ),
+        icon: Icon(Icons.settings, color: NeonTheme.textSecondary, size: 20),
+        label: Text(
+          'SETTINGS',
+          style: TextStyle(
+            fontSize: 14,
+            letterSpacing: 2,
+            color: NeonTheme.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Navigation ---
+
+  void _startGame() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          difficulty: _selectedDifficulty,
+          mode: GameMode.pvAI,
+        ),
+      ),
     );
   }
 }
