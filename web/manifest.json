@@ -1,0 +1,11 @@
+{
+  "name": "Neon Pente",
+  "short_name": "Pente",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0A0A1A",
+  "theme_color": "#00FFFF",
+  "description": "A neon-styled Pente strategy board game with AI and coaching features.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
