@@ -16,7 +16,7 @@ class _CoachScreenState extends State<CoachScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NeonTheme.darkBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('COACH MODE')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

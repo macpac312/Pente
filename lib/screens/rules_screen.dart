@@ -7,7 +7,7 @@ class RulesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NeonTheme.darkBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('HOW TO PLAY')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -12,7 +12,7 @@ class TrainingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NeonTheme.darkBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('TRAINING')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -244,7 +244,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NeonTheme.darkBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: Text(widget.puzzle.title)),
       body: Column(
         children: [

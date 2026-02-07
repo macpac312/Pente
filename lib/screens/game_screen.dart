@@ -579,7 +579,7 @@ class _GameScreenState extends State<GameScreen> {
     final isWide = screenWidth > 900;
 
     return Scaffold(
-      backgroundColor: NeonTheme.darkBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _buildAppBar(),
       body: isWide ? _buildWideLayout() : _buildNarrowLayout(),
     );

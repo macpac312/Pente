@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../main.dart' show themeModeNotifier;
 import '../theme/neon_theme.dart';
 import '../utils/constants.dart';
 
@@ -34,16 +35,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Color _player1Color = NeonTheme.neonCyan;
   Color _player2Color = NeonTheme.neonPink;
 
+  // ── Helpers for theme-aware colors ──────────────────────────────────
+
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get _bgColor => _isDark ? NeonTheme.darkBg : NeonTheme.lightBg;
+  Color get _cardColor => _isDark ? NeonTheme.cardBg : NeonTheme.lightCardBg;
+  Color get _txtPrimary =>
+      _isDark ? NeonTheme.textPrimary : NeonTheme.lightTextPrimary;
+  Color get _txtSecondary =>
+      _isDark ? NeonTheme.textSecondary : NeonTheme.lightTextSecondary;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NeonTheme.darkBg,
+      backgroundColor: _bgColor,
       appBar: AppBar(title: const Text('SETTINGS')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _sectionTitle('APPEARANCE'),
+            _buildThemeModePicker(),
+            const SizedBox(height: 24),
             _sectionTitle('THEME'),
             _buildColorPicker('Accent Color', _accentColor, (c) {
               setState(() => _accentColor = c);
@@ -112,6 +126,117 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // ── Theme mode picker ───────────────────────────────────────────────
+
+  Widget _buildThemeModePicker() {
+    final current = themeModeNotifier.value;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: NeonTheme.neonCyan.withAlpha(40),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Mode',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _buildThemeModeOption(
+                icon: Icons.dark_mode,
+                label: 'DARK',
+                mode: ThemeMode.dark,
+                isSelected: current == ThemeMode.dark,
+                color: NeonTheme.neonCyan,
+              ),
+              const SizedBox(width: 8),
+              _buildThemeModeOption(
+                icon: Icons.light_mode,
+                label: 'LIGHT',
+                mode: ThemeMode.light,
+                isSelected: current == ThemeMode.light,
+                color: NeonTheme.neonOrange,
+              ),
+              const SizedBox(width: 8),
+              _buildThemeModeOption(
+                icon: Icons.brightness_auto,
+                label: 'AUTO',
+                mode: ThemeMode.system,
+                isSelected: current == ThemeMode.system,
+                color: NeonTheme.neonPurple,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeModeOption({
+    required IconData icon,
+    required String label,
+    required ThemeMode mode,
+    required bool isSelected,
+    required Color color,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            themeModeNotifier.value = mode;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: isSelected ? color.withAlpha(40) : Colors.transparent,
+            border: Border.all(
+              color: isSelected ? color : color.withAlpha(40),
+              width: isSelected ? 1.5 : 0.5,
+            ),
+            boxShadow: isSelected
+                ? [NeonTheme.neonGlow(color, blur: 8, spread: 1)]
+                : [],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: isSelected ? color : color.withAlpha(100),
+                  size: 22),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight:
+                      isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? color : color.withAlpha(100),
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Section title ───────────────────────────────────────────────────
+
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -120,19 +245,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: NeonTheme.textSecondary,
+          color: _txtSecondary,
           letterSpacing: 3,
         ),
       ),
     );
   }
 
+  // ── Color picker ────────────────────────────────────────────────────
+
   Widget _buildColorPicker(
       String label, Color currentColor, void Function(Color) onSelect) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: NeonTheme.cardBg,
+        color: _cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: currentColor.withAlpha(40),
@@ -168,7 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : color.withAlpha(80),
                     border: Border.all(
                       color: isSelected
-                          ? Colors.white
+                          ? (_isDark ? Colors.white : Colors.black87)
                           : color.withAlpha(100),
                       width: isSelected ? 2 : 1,
                     ),
@@ -185,6 +312,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // ── Toggle ──────────────────────────────────────────────────────────
+
   Widget _buildToggle(
     String title,
     String subtitle,
@@ -200,20 +329,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        tileColor: NeonTheme.cardBg,
+        tileColor: _cardColor,
         title: Text(
           title,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: value ? color : NeonTheme.textSecondary,
+            color: value ? color : _txtSecondary,
           ),
         ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
             fontSize: 11,
-            color: NeonTheme.textSecondary.withAlpha(120),
+            color: _txtSecondary.withAlpha(120),
           ),
         ),
         trailing: Switch(
@@ -221,19 +350,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onChanged: onChanged,
           activeColor: color,
           activeTrackColor: color.withAlpha(80),
-          inactiveThumbColor: NeonTheme.textSecondary.withAlpha(80),
-          inactiveTrackColor: NeonTheme.textSecondary.withAlpha(25),
+          inactiveThumbColor: _txtSecondary.withAlpha(80),
+          inactiveTrackColor: _txtSecondary.withAlpha(25),
         ),
       ),
     );
   }
+
+  // ── Difficulty picker ───────────────────────────────────────────────
 
   Widget _buildDifficultyPicker() {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: NeonTheme.cardBg,
+        color: _cardColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
