@@ -4,26 +4,32 @@ import '../theme/neon_theme.dart';
 class EvalBar extends StatelessWidget {
   final int evaluation;
   final bool isVertical;
+  final Color? player1Color;
+  final Color? player2Color;
 
   const EvalBar({
     super.key,
     required this.evaluation,
     this.isVertical = true,
+    this.player1Color,
+    this.player2Color,
   });
 
   @override
   Widget build(BuildContext context) {
     // Normalize evaluation to 0.0 - 1.0 range (0.5 = equal)
     final normalized = (evaluation / 2000.0 + 0.5).clamp(0.0, 1.0);
+    final p1Color = player1Color ?? NeonTheme.neonCyan;
+    final p2Color = player2Color ?? NeonTheme.neonMagenta;
 
     if (isVertical) {
-      return _buildVerticalBar(normalized);
+      return _buildVerticalBar(normalized, p1Color, p2Color);
     } else {
-      return _buildHorizontalBar(normalized);
+      return _buildHorizontalBar(normalized, p1Color, p2Color);
     }
   }
 
-  Widget _buildVerticalBar(double normalized) {
+  Widget _buildVerticalBar(double normalized, Color p1Color, Color p2Color) {
     final p1Pct = (normalized * 100).round().clamp(1, 99);
     final p2Pct = 100 - p1Pct;
 
@@ -48,8 +54,8 @@ class EvalBar extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      NeonTheme.neonMagenta.withAlpha(180),
-                      NeonTheme.neonMagenta.withAlpha(100),
+                      p2Color.withAlpha(180),
+                      p2Color.withAlpha(100),
                     ],
                   ),
                 ),
@@ -65,8 +71,8 @@ class EvalBar extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      NeonTheme.neonCyan.withAlpha(100),
-                      NeonTheme.neonCyan.withAlpha(180),
+                      p1Color.withAlpha(100),
+                      p1Color.withAlpha(180),
                     ],
                   ),
                 ),
@@ -78,7 +84,7 @@ class EvalBar extends StatelessWidget {
     );
   }
 
-  Widget _buildHorizontalBar(double normalized) {
+  Widget _buildHorizontalBar(double normalized, Color p1Color, Color p2Color) {
     final p1Pct = (normalized * 100).round().clamp(1, 99);
     final p2Pct = 100 - p1Pct;
 
@@ -103,8 +109,8 @@ class EvalBar extends StatelessWidget {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      NeonTheme.neonCyan.withAlpha(180),
-                      NeonTheme.neonCyan.withAlpha(100),
+                      p1Color.withAlpha(180),
+                      p1Color.withAlpha(100),
                     ],
                   ),
                 ),
@@ -120,8 +126,8 @@ class EvalBar extends StatelessWidget {
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      NeonTheme.neonMagenta.withAlpha(100),
-                      NeonTheme.neonMagenta.withAlpha(180),
+                      p2Color.withAlpha(100),
+                      p2Color.withAlpha(180),
                     ],
                   ),
                 ),

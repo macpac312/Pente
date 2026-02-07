@@ -33,3 +33,12 @@ enum GameMode { pvp, pvAI, training }
 enum GamePhase { playing, paused, finished }
 
 enum AIDifficulty { easy, medium, hard, expert }
+
+enum TimeControl {
+  none,      // unlimited
+  min5,      // 5 minutes
+  min10,     // 10 minutes
+  min15,     // 15 minutes
+  min30,     // 30 minutes
+  min60,     // 60 minutes
+}

@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
   AIDifficulty _selectedDifficulty = AIDifficulty.medium;
+  TimeControl _selectedTimeControl = TimeControl.none;
 
   @override
   void initState() {
@@ -79,6 +80,42 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  // --- Time control config ---
+
+  String _timeControlLabel(TimeControl tc) {
+    switch (tc) {
+      case TimeControl.none:
+        return 'Unlimited';
+      case TimeControl.min5:
+        return '5 min';
+      case TimeControl.min10:
+        return '10 min';
+      case TimeControl.min15:
+        return '15 min';
+      case TimeControl.min30:
+        return '30 min';
+      case TimeControl.min60:
+        return '60 min';
+    }
+  }
+
+  IconData _timeControlIcon(TimeControl tc) {
+    switch (tc) {
+      case TimeControl.none:
+        return Icons.all_inclusive;
+      case TimeControl.min5:
+        return Icons.timer;
+      case TimeControl.min10:
+        return Icons.timer;
+      case TimeControl.min15:
+        return Icons.timer;
+      case TimeControl.min30:
+        return Icons.hourglass_bottom;
+      case TimeControl.min60:
+        return Icons.hourglass_full;
+    }
+  }
+
   // --- Build ---
 
   @override
@@ -100,6 +137,8 @@ class _HomeScreenState extends State<HomeScreen>
                   _buildSubtitle(),
                   const SizedBox(height: 48),
                   _buildDifficultySection(),
+                  const SizedBox(height: 24),
+                  _buildTimeControlSection(),
                   const SizedBox(height: 32),
                   _buildStartButton(),
                   const SizedBox(height: 12),
@@ -284,6 +323,85 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // --- Time control selector ---
+
+  Widget _buildTimeControlSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.timer, color: NeonTheme.textSecondary, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              'TIME CONTROL',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 3,
+                color: NeonTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: TimeControl.values.map(_buildTimeChip).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeChip(TimeControl tc) {
+    final isSelected = _selectedTimeControl == tc;
+    final color = tc == TimeControl.none
+        ? NeonTheme.textSecondary
+        : NeonTheme.neonYellow;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTimeControl = tc),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withAlpha(20) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? color.withAlpha(180)
+                : NeonTheme.textSecondary.withAlpha(40),
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [NeonTheme.neonGlow(color, blur: 8, spread: 0)]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _timeControlIcon(tc),
+              size: 14,
+              color: isSelected ? color : NeonTheme.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _timeControlLabel(tc),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                letterSpacing: 1,
+                color: isSelected ? color : NeonTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // --- Start Game button (green, glow animation) ---
 
   Widget _buildStartButton() {
@@ -446,6 +564,7 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (_) => GameScreen(
           difficulty: _selectedDifficulty,
           mode: GameMode.pvAI,
+          timeControl: _selectedTimeControl,
         ),
       ),
     );

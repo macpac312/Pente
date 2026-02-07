@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../engine/pente_engine.dart';
 import '../engine/ai_player.dart';
 import '../models/game_state.dart';
 import '../models/position.dart';
-import '../models/move_record.dart';
+import '../models/board_theme.dart';
 import '../utils/constants.dart';
 import '../main.dart' show boardThemeNotifier;
 import '../theme/neon_theme.dart';
@@ -13,11 +14,13 @@ import '../widgets/eval_bar_widget.dart';
 class GameScreen extends StatefulWidget {
   final AIDifficulty difficulty;
   final GameMode mode;
+  final TimeControl timeControl;
 
   const GameScreen({
     super.key,
     required this.difficulty,
     this.mode = GameMode.pvAI,
+    this.timeControl = TimeControl.none,
   });
 
   @override
@@ -37,6 +40,32 @@ class _GameScreenState extends State<GameScreen> {
   CoachHint? _currentHighlight;
   int _evaluation = 0;
 
+  // ── Clock ────────────────────────────────────────────────────────────
+  late TimeControl _timeControl;
+  int _player1TimeMs = 0; // remaining time in ms
+  int _player2TimeMs = 0;
+  Timer? _clockTimer;
+  bool _clockRunning = false;
+
+  bool get _hasClock => _timeControl != TimeControl.none;
+
+  static int _timeControlToMs(TimeControl tc) {
+    switch (tc) {
+      case TimeControl.none:
+        return 0;
+      case TimeControl.min5:
+        return 5 * 60 * 1000;
+      case TimeControl.min10:
+        return 10 * 60 * 1000;
+      case TimeControl.min15:
+        return 15 * 60 * 1000;
+      case TimeControl.min30:
+        return 30 * 60 * 1000;
+      case TimeControl.min60:
+        return 60 * 60 * 1000;
+    }
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────────────────
 
   @override
@@ -44,11 +73,83 @@ class _GameScreenState extends State<GameScreen> {
     super.initState();
     _difficulty = widget.difficulty;
     _mode = widget.mode;
+    _timeControl = widget.timeControl;
     _aiPlayer = AIPlayer(difficulty: _difficulty);
     _gameState = GameState.initial();
+
+    // Init clock
+    if (_hasClock) {
+      final ms = _timeControlToMs(_timeControl);
+      _player1TimeMs = ms;
+      _player2TimeMs = ms;
+    }
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
+  }
+
+  // ── Clock logic ──────────────────────────────────────────────────────
+
+  void _startClock() {
+    if (!_hasClock || _clockRunning) return;
+    _clockRunning = true;
+    _clockTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (!mounted || _gameState.isGameOver) {
+        _stopClock();
+        return;
+      }
+      setState(() {
+        if (_gameState.currentPlayer == StoneType.player1) {
+          _player1TimeMs = (_player1TimeMs - 100).clamp(0, _player1TimeMs);
+          if (_player1TimeMs <= 0) {
+            _onTimeout(StoneType.player1);
+          }
+        } else {
+          _player2TimeMs = (_player2TimeMs - 100).clamp(0, _player2TimeMs);
+          if (_player2TimeMs <= 0) {
+            _onTimeout(StoneType.player2);
+          }
+        }
+      });
+    });
+  }
+
+  void _stopClock() {
+    _clockTimer?.cancel();
+    _clockTimer = null;
+    _clockRunning = false;
+  }
+
+  void _onTimeout(StoneType player) {
+    _stopClock();
+    // The player who ran out of time loses
+    final winner =
+        player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
+    setState(() {
+      _gameState = _gameState.copyWith(
+        phase: GamePhase.finished,
+        winner: winner,
+      );
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _showGameOverDialog(timeoutLoser: player);
+    });
+  }
+
+  String _formatTime(int ms) {
+    if (ms <= 0) return '0:00';
+    final totalSeconds = (ms / 1000).ceil();
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
+
+  BoardThemeData get _bt => boardThemeNotifier.value;
 
   String get _difficultyLabel {
     switch (_difficulty) {
@@ -126,6 +227,11 @@ class _GameScreenState extends State<GameScreen> {
       _currentHighlight = null;
     });
 
+    // Start the clock on the first move
+    if (_hasClock && !_clockRunning && !_gameState.isGameOver) {
+      _startClock();
+    }
+
     _updateEvaluation();
     _checkGameEnd();
 
@@ -188,6 +294,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _checkGameEnd() {
     if (_gameState.isGameOver) {
+      _stopClock();
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) _showGameOverDialog();
       });
@@ -224,6 +331,7 @@ class _GameScreenState extends State<GameScreen> {
   // ── Reset ──────────────────────────────────────────────────────────────
 
   void _resetGame() {
+    _stopClock();
     setState(() {
       _gameState = GameState.initial();
       _isAIThinking = false;
@@ -232,6 +340,13 @@ class _GameScreenState extends State<GameScreen> {
       _selectedPosition = null;
       _evaluation = 0;
       _isCoachThinking = false;
+
+      // Reset clocks
+      if (_hasClock) {
+        final ms = _timeControlToMs(_timeControl);
+        _player1TimeMs = ms;
+        _player2TimeMs = ms;
+      }
     });
   }
 
@@ -332,7 +447,7 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void _showGameOverDialog() {
+  void _showGameOverDialog({StoneType? timeoutLoser}) {
     final winner = _gameState.winner;
 
     String title;
@@ -356,8 +471,17 @@ class _GameScreenState extends State<GameScreen> {
       titleColor = NeonTheme.neonGreen;
     }
 
-    final winType =
-        _gameState.winningStones != null ? '5 in a row' : 'By capture';
+    String winType;
+    if (timeoutLoser != null) {
+      final loserName = _mode == GameMode.pvAI
+          ? (timeoutLoser == StoneType.player1 ? 'Player' : 'AI')
+          : (timeoutLoser == StoneType.player1 ? 'Player 1' : 'Player 2');
+      winType = '$loserName ran out of time';
+    } else if (_gameState.winningStones != null) {
+      winType = '5 in a row';
+    } else {
+      winType = 'By capture';
+    }
 
     showDialog(
       context: context,
@@ -821,7 +945,7 @@ class _GameScreenState extends State<GameScreen> {
     final isWide = screenWidth > 900;
 
     return Scaffold(
-      backgroundColor: boardThemeNotifier.value.backgroundColor,
+      backgroundColor: _bt.backgroundColor,
       appBar: _buildAppBar(),
       body: isWide ? _buildWideLayout() : _buildNarrowLayout(),
     );
@@ -913,17 +1037,22 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildWideLayout() {
     return Row(
       children: [
-        // Eval bar (vertical)
-        EvalBar(evaluation: _evaluation, isVertical: true),
+        // Eval bar (vertical) — uses board theme colors
+        EvalBar(
+          evaluation: _evaluation,
+          isVertical: true,
+          player1Color: _bt.player1Color,
+          player2Color: _bt.player2Color,
+        ),
 
         // Board + captures column
         Expanded(
           flex: 3,
           child: Column(
             children: [
-              _buildCapturesRow(StoneType.player2),
+              _buildPlayerRow(StoneType.player2),
               Expanded(child: _buildBoardArea()),
-              _buildCapturesRow(StoneType.player1),
+              _buildPlayerRow(StoneType.player1),
             ],
           ),
         ),
@@ -963,12 +1092,17 @@ class _GameScreenState extends State<GameScreen> {
     return Column(
       children: [
         _buildStatusBar(),
-        _buildCapturesRow(StoneType.player2),
+        _buildPlayerRow(StoneType.player2),
         Expanded(child: _buildBoardArea()),
-        _buildCapturesRow(StoneType.player1),
+        _buildPlayerRow(StoneType.player1),
 
-        // Eval bar (horizontal)
-        EvalBar(evaluation: _evaluation, isVertical: false),
+        // Eval bar (horizontal) — uses board theme colors
+        EvalBar(
+          evaluation: _evaluation,
+          isVertical: false,
+          player1Color: _bt.player1Color,
+          player2Color: _bt.player2Color,
+        ),
 
         // Bottom panels
         SizedBox(
@@ -1089,15 +1223,15 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // ── Captures Row ───────────────────────────────────────────────────────
+  // ── Player Row (captures + clock) ─────────────────────────────────────
 
-  Widget _buildCapturesRow(StoneType player) {
+  Widget _buildPlayerRow(StoneType player) {
     final captures = player == StoneType.player1
         ? _gameState.player1Captures
         : _gameState.player2Captures;
     final color = player == StoneType.player1
-        ? NeonTheme.player1Color
-        : NeonTheme.player2Color;
+        ? _bt.player1Color
+        : _bt.player2Color;
     final isActive =
         _gameState.currentPlayer == player && !_gameState.isGameOver;
     final name = _mode == GameMode.pvAI
@@ -1133,6 +1267,11 @@ class _GameScreenState extends State<GameScreen> {
               letterSpacing: 1,
             ),
           ),
+          const SizedBox(width: 12),
+
+          // Clock display (if time control enabled)
+          if (_hasClock) _buildClock(player, color, isActive),
+
           const Spacer(),
           Text(
             'CAPTURES',
@@ -1164,6 +1303,46 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildClock(StoneType player, Color color, bool isActive) {
+    final timeMs = player == StoneType.player1
+        ? _player1TimeMs
+        : _player2TimeMs;
+    final isLowTime = timeMs < 30000; // < 30 seconds
+    final isCritical = timeMs < 10000; // < 10 seconds
+    final displayColor = isCritical
+        ? NeonTheme.neonRed
+        : isLowTime
+            ? NeonTheme.neonOrange
+            : color;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isActive ? displayColor.withAlpha(20) : Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isActive
+              ? displayColor.withAlpha(120)
+              : displayColor.withAlpha(40),
+          width: isActive ? 1.5 : 1,
+        ),
+        boxShadow: isActive && isCritical
+            ? [BoxShadow(color: NeonTheme.neonRed.withAlpha(60), blurRadius: 8)]
+            : [],
+      ),
+      child: Text(
+        _formatTime(timeMs),
+        style: TextStyle(
+          color: isActive ? displayColor : displayColor.withAlpha(150),
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'monospace',
+          letterSpacing: 1,
+        ),
       ),
     );
   }
@@ -1208,24 +1387,24 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
               ),
-              // Player 1 move
+              // Player 1 move — uses board theme color
               Expanded(
                 child: Text(
                   moves[p1Idx].notation,
                   style: TextStyle(
-                    color: NeonTheme.player1Color,
+                    color: _bt.player1Color,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              // Player 2 move (if exists)
+              // Player 2 move (if exists) — uses board theme color
               if (p2Idx < moves.length)
                 Expanded(
                   child: Text(
                     moves[p2Idx].notation,
                     style: TextStyle(
-                      color: NeonTheme.player2Color,
+                      color: _bt.player2Color,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
