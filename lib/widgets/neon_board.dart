@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../models/board_theme.dart';
 import '../models/position.dart';
+import '../main.dart' show boardThemeNotifier;
 import '../theme/neon_theme.dart';
 import '../utils/constants.dart';
 import 'neon_stone.dart';
@@ -15,6 +17,7 @@ class NeonBoard extends StatelessWidget {
   final StoneType currentPlayer;
   final void Function(Position)? onTap;
   final bool showLabels;
+  final BoardThemeData? themeOverride;
 
   const NeonBoard({
     super.key,
@@ -27,6 +30,7 @@ class NeonBoard extends StatelessWidget {
     this.currentPlayer = StoneType.player1,
     this.onTap,
     this.showLabels = true,
+    this.themeOverride,
   });
 
   // ── Helpers ──────────────────────────────────────────────────────────
@@ -50,9 +54,8 @@ class NeonBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bt = themeOverride ?? boardThemeNotifier.value;
 
-    // Use LayoutBuilder to force the entire widget to be square
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxSize = math.min(constraints.maxWidth, constraints.maxHeight);
@@ -62,15 +65,15 @@ class NeonBoard extends StatelessWidget {
             width: maxSize,
             height: maxSize,
             child: showLabels
-                ? _buildWithLabels(isDark)
-                : _buildBoardContainer(isDark),
+                ? _buildWithLabels(bt)
+                : _buildBoardContainer(bt),
           ),
         );
       },
     );
   }
 
-  Widget _buildWithLabels(bool isDark) {
+  Widget _buildWithLabels(BoardThemeData bt) {
     return Column(
       children: [
         // Column labels (A-S)
@@ -87,9 +90,7 @@ class NeonBoard extends StatelessWidget {
                         child: Text(
                           String.fromCharCode(65 + col),
                           style: TextStyle(
-                            color: isDark
-                                ? NeonTheme.textSecondary
-                                : NeonTheme.lightTextSecondary,
+                            color: bt.labelColor,
                             fontSize: 9,
                             fontWeight: FontWeight.w500,
                           ),
@@ -116,9 +117,7 @@ class NeonBoard extends StatelessWidget {
                         child: Text(
                           '${Constants.boardSize - row}',
                           style: TextStyle(
-                            color: isDark
-                                ? NeonTheme.textSecondary
-                                : NeonTheme.lightTextSecondary,
+                            color: bt.labelColor,
                             fontSize: 9,
                             fontWeight: FontWeight.w500,
                           ),
@@ -133,7 +132,7 @@ class NeonBoard extends StatelessWidget {
               Expanded(
                 child: AspectRatio(
                   aspectRatio: 1,
-                  child: _buildBoardContainer(isDark),
+                  child: _buildBoardContainer(bt),
                 ),
               ),
             ],
@@ -145,17 +144,14 @@ class NeonBoard extends StatelessWidget {
 
   // ── Board container with neon border & glow ──────────────────────────
 
-  Widget _buildBoardContainer(bool isDark) {
-    final boardBg = isDark ? NeonTheme.gridBg : NeonTheme.lightGridBg;
-    final borderColor = isDark
-        ? NeonTheme.neonCyan.withAlpha(80)
-        : NeonTheme.neonCyan.withAlpha(50);
-
+  Widget _buildBoardContainer(BoardThemeData bt) {
     return Container(
       decoration: BoxDecoration(
-        color: boardBg,
-        border: Border.all(color: borderColor, width: 2),
-        boxShadow: isDark ? NeonTheme.neonGlowMultiple(NeonTheme.neonCyan) : [],
+        color: bt.boardColor,
+        border: Border.all(color: bt.boardBorderColor, width: 2),
+        boxShadow: bt.boardBorderColor.alpha > 50
+            ? NeonTheme.neonGlowMultiple(bt.boardBorderColor)
+            : [],
         borderRadius: BorderRadius.circular(4),
       ),
       child: ClipRRect(
@@ -169,7 +165,7 @@ class NeonBoard extends StatelessWidget {
                   child: Row(
                     children: List.generate(Constants.boardSize, (col) {
                       return Expanded(
-                        child: _buildIntersection(row, col, isDark),
+                        child: _buildIntersection(row, col, bt),
                       );
                     }),
                   ),
@@ -177,7 +173,7 @@ class NeonBoard extends StatelessWidget {
               }),
             ),
 
-            // Tournament boundary overlay (drawn on top of entire grid)
+            // Tournament boundary overlay
             if (_showTournamentZone)
               Positioned.fill(
                 child: IgnorePointer(
@@ -198,7 +194,7 @@ class NeonBoard extends StatelessWidget {
 
   // ── Individual intersection ────────────────────────────────────────
 
-  Widget _buildIntersection(int row, int col, bool isDark) {
+  Widget _buildIntersection(int row, int col, BoardThemeData bt) {
     final pos = Position(row, col);
     final stone = board[row][col];
     final isLast = lastMove == pos;
@@ -224,9 +220,7 @@ class NeonBoard extends StatelessWidget {
                   row: row,
                   col: col,
                   boardSize: Constants.boardSize,
-                  lineColor: isDark
-                      ? NeonTheme.neonCyan.withAlpha(35)
-                      : NeonTheme.lightGridLine,
+                  lineColor: bt.gridLineColor,
                 ),
               ),
 
@@ -261,10 +255,10 @@ class NeonBoard extends StatelessWidget {
                   height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: NeonTheme.neonCyan.withAlpha(100),
+                    color: bt.starPointColor,
                     boxShadow: [
                       BoxShadow(
-                        color: NeonTheme.neonCyan.withAlpha(50),
+                        color: bt.starPointColor.withAlpha(50),
                         blurRadius: 4,
                       ),
                     ],
@@ -296,6 +290,7 @@ class NeonBoard extends StatelessWidget {
                   size: stoneSize,
                   isLastMove: isLast,
                   isWinning: isWinning,
+                  themeOverride: themeOverride,
                 ),
             ],
           );
@@ -342,7 +337,8 @@ class _GridLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GridLinePainter oldDelegate) => false;
+  bool shouldRepaint(_GridLinePainter oldDelegate) =>
+      lineColor != oldDelegate.lineColor;
 }
 
 // ── CustomPainter for tournament rule boundary ────────────────────────
@@ -363,13 +359,9 @@ class _TournamentBoundaryPainter extends CustomPainter {
     final cellW = size.width / boardSize;
     final cellH = size.height / boardSize;
 
-    // The restricted zone covers cells from (center-dist+1) to (center+dist-1).
-    // The boundary line sits at the edges of that zone.
-    final firstRestricted = centerIdx - distance + 1; // 7
-    final lastRestricted = centerIdx + distance - 1;  // 11
+    final firstRestricted = centerIdx - distance + 1;
+    final lastRestricted = centerIdx + distance - 1;
 
-    // Boundary rect: from the left edge of first restricted cell
-    // to the right edge of last restricted cell.
     final left = firstRestricted * cellW;
     final top = firstRestricted * cellH;
     final right = (lastRestricted + 1) * cellW;
@@ -377,7 +369,6 @@ class _TournamentBoundaryPainter extends CustomPainter {
 
     final rect = Rect.fromLTRB(left, top, right, bottom);
 
-    // Dashed-look: draw as a solid line with neon glow
     final paint = Paint()
       ..color = NeonTheme.neonRed.withAlpha(120)
       ..strokeWidth = 1.5
@@ -385,7 +376,6 @@ class _TournamentBoundaryPainter extends CustomPainter {
 
     canvas.drawRect(rect, paint);
 
-    // Subtle outer glow
     final glowPaint = Paint()
       ..color = NeonTheme.neonRed.withAlpha(40)
       ..strokeWidth = 4.0

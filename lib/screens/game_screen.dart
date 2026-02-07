@@ -5,6 +5,7 @@ import '../models/game_state.dart';
 import '../models/position.dart';
 import '../models/move_record.dart';
 import '../utils/constants.dart';
+import '../main.dart' show boardThemeNotifier;
 import '../theme/neon_theme.dart';
 import '../widgets/neon_board.dart';
 import '../widgets/eval_bar_widget.dart';
@@ -820,7 +821,7 @@ class _GameScreenState extends State<GameScreen> {
     final isWide = screenWidth > 900;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: boardThemeNotifier.value.backgroundColor,
       appBar: _buildAppBar(),
       body: isWide ? _buildWideLayout() : _buildNarrowLayout(),
     );

@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import '../theme/neon_theme.dart';
+import '../models/board_theme.dart';
+import '../main.dart' show boardThemeNotifier;
 import '../utils/constants.dart';
 
 /// A simple neon-styled stone rendered as a glowing circle.
 ///
-/// No animations — just a styled [Container] with a [RadialGradient] and
-/// layered [BoxShadow]s, matching the Neon Chess piece aesthetic.
+/// Reads player colors and glow intensity from the global [boardThemeNotifier].
+/// An optional [themeOverride] can be passed (used by the settings preview).
 class NeonStone extends StatelessWidget {
   final StoneType type;
   final double size;
   final bool isLastMove;
   final bool isWinning;
+  final BoardThemeData? themeOverride;
 
   const NeonStone({
     super.key,
@@ -18,20 +20,26 @@ class NeonStone extends StatelessWidget {
     this.size = 28,
     this.isLastMove = false,
     this.isWinning = false,
+    this.themeOverride,
   });
 
   @override
   Widget build(BuildContext context) {
     if (type == StoneType.none) return const SizedBox.shrink();
 
-    final color = type == StoneType.player1
-        ? NeonTheme.player1Color
-        : NeonTheme.player2Color;
-    final glowColor = type == StoneType.player1
-        ? NeonTheme.player1Glow
-        : NeonTheme.player2Glow;
+    final theme = themeOverride ?? boardThemeNotifier.value;
 
-    final double glowIntensity = isWinning ? 1.5 : 1.0;
+    final color = type == StoneType.player1
+        ? theme.player1Color
+        : theme.player2Color;
+    final glowColor = type == StoneType.player1
+        ? theme.player1Glow
+        : theme.player2Glow;
+    final baseIntensity = type == StoneType.player1
+        ? theme.player1GlowIntensity
+        : theme.player2GlowIntensity;
+
+    final double glowIntensity = (isWinning ? 1.5 : 1.0) * baseIntensity;
 
     return Container(
       width: size,
@@ -49,20 +57,20 @@ class NeonStone extends StatelessWidget {
         boxShadow: [
           // Inner glow
           BoxShadow(
-            color: glowColor.withAlpha((200 * glowIntensity).round()),
+            color: glowColor.withAlpha((200 * glowIntensity).round().clamp(0, 255)),
             blurRadius: 6 * glowIntensity,
             spreadRadius: 1,
           ),
           // Outer glow
           BoxShadow(
-            color: glowColor.withAlpha((100 * glowIntensity).round()),
+            color: glowColor.withAlpha((100 * glowIntensity).round().clamp(0, 255)),
             blurRadius: 12 * glowIntensity,
             spreadRadius: 2,
           ),
           // Extra ambient glow for winning / last-move stones
           if (isWinning || isLastMove)
             BoxShadow(
-              color: glowColor.withAlpha((50 * glowIntensity).round()),
+              color: glowColor.withAlpha((50 * glowIntensity).round().clamp(0, 255)),
               blurRadius: 24,
               spreadRadius: 4,
             ),
