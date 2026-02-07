@@ -60,13 +60,14 @@ class LanHost {
     }
   }
 
-  /// Stop hosting and clean up all resources.
+  /// Stop hosting and clean up server resources.
+  /// Does NOT close the client connection — ownership is transferred to
+  /// GameScreen via the onClientJoined stream.
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
     _beaconTimer?.cancel();
     _udpSocket?.close();
-    await _clientConnection?.close();
     await _server?.close();
     if (!_clientJoinedController.isClosed) {
       await _clientJoinedController.close();
