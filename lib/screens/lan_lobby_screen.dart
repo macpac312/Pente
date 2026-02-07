@@ -69,8 +69,19 @@ class _LanLobbyScreenState extends State<LanLobbyScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final errMsg = e.toString();
+      String userMessage;
+      if (errMsg.contains('Operation not permitted') ||
+          errMsg.contains('Permission denied')) {
+        userMessage =
+            'Network permission denied.\nPlease reinstall the app to grant network permissions.';
+      } else if (errMsg.contains('Address already in use')) {
+        userMessage = 'Port already in use. Another game may be running.';
+      } else {
+        userMessage = 'Failed to start server:\n$errMsg';
+      }
       setState(() {
-        _statusMessage = 'Failed to start server: $e';
+        _statusMessage = userMessage;
         _state = _LobbyState.choosingRole;
       });
     }
@@ -78,11 +89,14 @@ class _LanLobbyScreenState extends State<LanLobbyScreen> {
 
   // ── Join Flow ──────────────────────────────────────────────────────
 
+  bool _discoveryFailed = false;
+
   Future<void> _startDiscovery() async {
     setState(() {
       _state = _LobbyState.joining;
       _statusMessage = 'Searching for games...';
       _discoveredGames.clear();
+      _discoveryFailed = false;
     });
 
     try {
@@ -98,9 +112,13 @@ class _LanLobbyScreenState extends State<LanLobbyScreen> {
         });
       });
     } catch (e) {
+      // UDP discovery failed (common on Android) — fall back to manual IP
       if (!mounted) return;
+      _client = LanClient(); // keep client for joinByIp()
       setState(() {
-        _statusMessage = 'Discovery failed: $e';
+        _discoveryFailed = true;
+        _statusMessage =
+            'Auto-discovery unavailable.\nUse the IP address shown on the host device to connect.';
       });
     }
   }
@@ -549,18 +567,18 @@ class _LanLobbyScreenState extends State<LanLobbyScreen> {
           const SizedBox(height: 12),
 
           // Discovered games list
-          if (_discoveredGames.isEmpty && !_isConnecting)
-            _buildEmptyDiscovery()
-          else
-            ...(_discoveredGames.map(_buildGameTile)),
+          if (!_discoveryFailed) ...[
+            if (_discoveredGames.isEmpty && !_isConnecting)
+              _buildEmptyDiscovery()
+            else
+              ...(_discoveredGames.map(_buildGameTile)),
+            const SizedBox(height: 24),
+            Divider(color: NeonTheme.textSecondary.withAlpha(40)),
+          ],
 
-          const SizedBox(height: 24),
-
-          // Manual IP entry
-          Divider(color: NeonTheme.textSecondary.withAlpha(40)),
           const SizedBox(height: 16),
           Text(
-            'OR CONNECT BY IP',
+            _discoveryFailed ? 'CONNECT BY IP' : 'OR CONNECT BY IP',
             style: TextStyle(
               color: NeonTheme.textSecondary,
               fontSize: 11,

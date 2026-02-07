@@ -38,21 +38,26 @@ class LanHost {
   });
 
   /// Start hosting: bind TCP server and begin UDP beacon broadcast.
+  /// TCP server is required; UDP beacon is best-effort (may fail on Android).
   Future<void> startHosting() async {
     _localIp = await _getLocalIp();
 
-    // Bind TCP server
+    // Bind TCP server (required)
     _server = await ServerSocket.bind(InternetAddress.anyIPv4, tcpPort);
     _server!.listen(_onClientConnect);
 
-    // Start UDP beacon
-    _udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-    _udpSocket!.broadcastEnabled = true;
-    _sendBeacon(); // send immediately
-    _beaconTimer = Timer.periodic(
-      const Duration(milliseconds: Constants.lanBeaconIntervalMs),
-      (_) => _sendBeacon(),
-    );
+    // Start UDP beacon (best-effort — may fail on some platforms)
+    try {
+      _udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      _udpSocket!.broadcastEnabled = true;
+      _sendBeacon(); // send immediately
+      _beaconTimer = Timer.periodic(
+        const Duration(milliseconds: Constants.lanBeaconIntervalMs),
+        (_) => _sendBeacon(),
+      );
+    } catch (_) {
+      // UDP broadcast not available; clients must connect by IP
+    }
   }
 
   /// Stop hosting and clean up all resources.
