@@ -30,18 +30,14 @@ class NeonBoard extends StatelessWidget {
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
-  /// True when the tournament-rule restricted zone should be displayed.
   bool get _showTournamentZone =>
       moveCount == 2 && currentPlayer == StoneType.player1;
 
-  /// Star-point positions on a standard 19x19 board.
   static bool _isStarPoint(int row, int col) {
     return (row == 3 || row == 9 || row == 15) &&
         (col == 3 || col == 9 || col == 15);
   }
 
-  /// Whether [row],[col] falls inside the tournament-rule restricted area
-  /// (Chebyshev distance < tournamentRuleDistance from centre).
   static bool _isInTournamentZone(int row, int col) {
     final dr = (row - Constants.boardCenter).abs();
     final dc = (col - Constants.boardCenter).abs();
@@ -67,7 +63,7 @@ class NeonBoard extends StatelessWidget {
           height: 16,
           child: Row(
             children: [
-              const SizedBox(width: 18), // spacer matching row-label width
+              const SizedBox(width: 18),
               Expanded(
                 child: Row(
                   children: List.generate(Constants.boardSize, (col) {
@@ -94,7 +90,6 @@ class NeonBoard extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              // Row labels (19 down to 1)
               SizedBox(
                 width: 18,
                 child: Column(
@@ -115,7 +110,6 @@ class NeonBoard extends StatelessWidget {
                 ),
               ),
 
-              // The board itself
               Expanded(
                 child: AspectRatio(
                   aspectRatio: 1,
@@ -134,6 +128,7 @@ class NeonBoard extends StatelessWidget {
   Widget _buildBoardContainer() {
     return Container(
       decoration: BoxDecoration(
+        color: NeonTheme.gridBg,
         border: Border.all(
           color: NeonTheme.neonCyan.withAlpha(80),
           width: 2,
@@ -149,7 +144,7 @@ class NeonBoard extends StatelessWidget {
               child: Row(
                 children: List.generate(Constants.boardSize, (col) {
                   return Expanded(
-                    child: _buildSquare(row, col),
+                    child: _buildIntersection(row, col),
                   );
                 }),
               ),
@@ -160,9 +155,9 @@ class NeonBoard extends StatelessWidget {
     );
   }
 
-  // ── Individual square ────────────────────────────────────────────────
+  // ── Individual intersection ────────────────────────────────────────
 
-  Widget _buildSquare(int row, int col) {
+  Widget _buildIntersection(int row, int col) {
     final pos = Position(row, col);
     final stone = board[row][col];
     final isLast = lastMove == pos;
@@ -170,88 +165,141 @@ class NeonBoard extends StatelessWidget {
     final isHighlight = highlightPosition == pos && stone == StoneType.none;
     final isRestricted = _showTournamentZone && _isInTournamentZone(row, col);
 
-    // Alternating subtle dark colours (chess-style)
-    final isDark = (row + col) % 2 == 0;
-    Color bgColor = isDark ? NeonTheme.gridBg : NeonTheme.gridLine;
-
-    // Last-move highlight
-    if (isLast && stone != StoneType.none) {
-      bgColor = NeonTheme.neonYellow.withAlpha(25);
-    }
-
     return GestureDetector(
       onTap: interactive && onTap != null ? () => onTap!(pos) : null,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          border: Border.all(
-            color: NeonTheme.neonCyan.withAlpha(12),
-            width: 0.5,
-          ),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final cellSize = constraints.maxWidth;
-            final stoneSize = cellSize * 0.78;
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cellSize = constraints.maxWidth;
+          final stoneSize = cellSize * 0.85;
 
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                // Tournament-rule restricted zone overlay
-                if (isRestricted)
-                  Positioned.fill(
-                    child: Container(color: NeonTheme.neonRed.withAlpha(18)),
-                  ),
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Grid lines through center of each intersection
+              CustomPaint(
+                size: Size(cellSize, cellSize),
+                painter: _GridLinePainter(
+                  row: row,
+                  col: col,
+                  boardSize: Constants.boardSize,
+                  lineColor: NeonTheme.neonCyan.withAlpha(35),
+                ),
+              ),
 
-                // Star point dot (only visible when no stone)
-                if (stone == StoneType.none && _isStarPoint(row, col))
-                  Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: NeonTheme.neonCyan.withAlpha(80),
-                      boxShadow: [
-                        BoxShadow(
-                          color: NeonTheme.neonCyan.withAlpha(40),
-                          blurRadius: 3,
-                        ),
-                      ],
-                    ),
-                  ),
+              // Tournament-rule restricted zone overlay
+              if (isRestricted)
+                Positioned.fill(
+                  child: Container(color: NeonTheme.neonRed.withAlpha(18)),
+                ),
 
-                // Coach hint / legal-move dot
-                if (isHighlight)
-                  Container(
-                    width: cellSize * 0.32,
-                    height: cellSize * 0.32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: NeonTheme.neonGreen.withAlpha(100),
-                      boxShadow: [
-                        BoxShadow(
-                          color: NeonTheme.neonGreen.withAlpha(80),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
+              // Last-move highlight glow behind stone
+              if (isLast && stone != StoneType.none)
+                Container(
+                  width: cellSize * 0.6,
+                  height: cellSize * 0.6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: NeonTheme.neonYellow.withAlpha(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: NeonTheme.neonYellow.withAlpha(30),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
+                ),
 
-                // Stone
-                if (stone != StoneType.none)
-                  NeonStone(
-                    type: stone,
-                    size: stoneSize,
-                    isLastMove: isLast,
-                    isWinning: isWinning,
+              // Star point dot (only visible when no stone)
+              if (stone == StoneType.none && _isStarPoint(row, col))
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: NeonTheme.neonCyan.withAlpha(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: NeonTheme.neonCyan.withAlpha(50),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
-              ],
-            );
-          },
-        ),
+                ),
+
+              // Coach hint dot
+              if (isHighlight)
+                Container(
+                  width: cellSize * 0.35,
+                  height: cellSize * 0.35,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: NeonTheme.neonGreen.withAlpha(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: NeonTheme.neonGreen.withAlpha(80),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Stone on the intersection
+              if (stone != StoneType.none)
+                NeonStone(
+                  type: stone,
+                  size: stoneSize,
+                  isLastMove: isLast,
+                  isWinning: isWinning,
+                ),
+            ],
+          );
+        },
       ),
     );
   }
+}
+
+// ── CustomPainter for grid lines ──────────────────────────────────────
+
+class _GridLinePainter extends CustomPainter {
+  final int row;
+  final int col;
+  final int boardSize;
+  final Color lineColor;
+
+  _GridLinePainter({
+    required this.row,
+    required this.col,
+    required this.boardSize,
+    required this.lineColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    // Horizontal line: from left edge to right edge of cell,
+    // but stop at center for board edges.
+    final left = col == 0 ? cx : 0.0;
+    final right = col == boardSize - 1 ? cx : size.width;
+    canvas.drawLine(Offset(left, cy), Offset(right, cy), paint);
+
+    // Vertical line: from top edge to bottom edge of cell,
+    // but stop at center for board edges.
+    final top = row == 0 ? cy : 0.0;
+    final bottom = row == boardSize - 1 ? cy : size.height;
+    canvas.drawLine(Offset(cx, top), Offset(cx, bottom), paint);
+  }
+
+  @override
+  bool shouldRepaint(_GridLinePainter oldDelegate) => false;
 }
