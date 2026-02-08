@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../main.dart' show themeModeNotifier, boardThemeNotifier, boardSizeNotifier;
+import '../main.dart' show themeModeNotifier, boardThemeNotifier, boardSizeNotifier, dragToPlaceNotifier, zoomCellsNotifier;
 import '../models/board_theme.dart';
 import '../models/position.dart';
 import '../theme/neon_theme.dart';
@@ -164,6 +164,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               NeonTheme.neonGreen,
             ),
             _buildBoardSizePicker(),
+            _buildZoomSettings(),
             const SizedBox(height: 8),
             _buildDifficultyPicker(),
             const SizedBox(height: 24),
@@ -808,6 +809,132 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // ── Touch zoom settings ──────────────────────────────────────────
+
+  Widget _buildZoomSettings() {
+    final enabled = dragToPlaceNotifier.value;
+    final zoomCells = zoomCellsNotifier.value;
+    final boardSize = boardSizeNotifier.value;
+    final maxZoomCells = boardSize; // = no zoom
+    const minZoomCells = 9; // = max zoom
+    final accentColor = NeonTheme.neonOrange;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Toggle
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Touch Zoom & Crosshair',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: enabled
+                            ? accentColor
+                            : _txtSecondary.withAlpha(120),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Zoom in and show crosshair when placing stones',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _txtSecondary.withAlpha(120),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: enabled,
+                onChanged: (v) => setState(() {
+                  dragToPlaceNotifier.value = v;
+                }),
+                activeColor: accentColor,
+              ),
+            ],
+          ),
+
+          // Zoom level slider (only when enabled)
+          if (enabled && boardSize > minZoomCells) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Zoom Level',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _txtSecondary,
+                    ),
+                  ),
+                ),
+                Text(
+                  zoomCells >= boardSize
+                      ? 'None (crosshair only)'
+                      : '$zoomCells\u00D7$zoomCells visible',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: accentColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: accentColor,
+                inactiveTrackColor: accentColor.withAlpha(30),
+                thumbColor: accentColor,
+                overlayColor: accentColor.withAlpha(30),
+                trackHeight: 3,
+                thumbShape:
+                    const RoundSliderThumbShape(enabledThumbRadius: 8),
+              ),
+              child: Slider(
+                value: zoomCells.clamp(minZoomCells, maxZoomCells).toDouble(),
+                min: minZoomCells.toDouble(),
+                max: maxZoomCells.toDouble(),
+                divisions: maxZoomCells - minZoomCells,
+                onChanged: (v) {
+                  setState(() {
+                    zoomCellsNotifier.value = v.round();
+                  });
+                },
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Max zoom',
+                  style: TextStyle(fontSize: 10, color: _txtSecondary),
+                ),
+                Text(
+                  'No zoom',
+                  style: TextStyle(fontSize: 10, color: _txtSecondary),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

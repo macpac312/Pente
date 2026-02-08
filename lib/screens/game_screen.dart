@@ -6,7 +6,7 @@ import '../models/game_state.dart';
 import '../models/position.dart';
 import '../models/board_theme.dart';
 import '../utils/constants.dart';
-import '../main.dart' show boardThemeNotifier, boardSizeNotifier;
+import '../main.dart' show boardThemeNotifier, boardSizeNotifier, dragToPlaceNotifier, zoomCellsNotifier;
 import '../theme/neon_theme.dart';
 import '../widgets/neon_board.dart';
 import '../widgets/eval_bar_widget.dart';
@@ -92,6 +92,20 @@ class _GameScreenState extends State<GameScreen> {
     _timeControl = widget.timeControl;
     _aiPlayer = AIPlayer(difficulty: _difficulty);
     _gameState = GameState.initial(size: boardSizeNotifier.value);
+
+    // Auto-place the mandatory first move at center (tournament rule).
+    if (_mode != GameMode.lan) {
+      final center = _gameState.center;
+      _gameState = PenteEngine.makeMove(
+          _gameState, Position(center, center));
+
+      // In PvAI mode the AI (player 2) must respond to the auto-placed move.
+      if (_mode == GameMode.pvAI) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_gameState.isGameOver) _makeAIMove();
+        });
+      }
+    }
 
     // Init clock
     if (_hasClock) {
@@ -569,6 +583,14 @@ class _GameScreenState extends State<GameScreen> {
     _stopClock();
     setState(() {
       _gameState = GameState.initial(size: boardSizeNotifier.value);
+
+      // Auto-place mandatory first move at center.
+      if (!_isLan) {
+        final center = _gameState.center;
+        _gameState = PenteEngine.makeMove(
+            _gameState, Position(center, center));
+      }
+
       _isAIThinking = false;
       _coachHints = [];
       _currentHighlight = null;
@@ -583,6 +605,13 @@ class _GameScreenState extends State<GameScreen> {
         _player2TimeMs = ms;
       }
     });
+
+    // Trigger AI response to the auto-placed first move.
+    if (_mode == GameMode.pvAI && !_isLan) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_gameState.isGameOver) _makeAIMove();
+      });
+    }
   }
 
   // ── Dialogs ────────────────────────────────────────────────────────────
@@ -1567,7 +1596,8 @@ class _GameScreenState extends State<GameScreen> {
         winningStones: _gameState.winningStones,
         moveCount: _gameState.moveCount,
         currentPlayer: _gameState.currentPlayer,
-        dragToPlace: isMobile,
+        dragToPlace: isMobile && dragToPlaceNotifier.value,
+        zoomCells: zoomCellsNotifier.value,
       ),
     );
   }

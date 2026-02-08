@@ -19,9 +19,13 @@ class NeonBoard extends StatefulWidget {
   final bool showLabels;
   final BoardThemeData? themeOverride;
 
-  /// When true, touch-drag zooms the board to ~9×9 and shows a crosshair
+  /// When true, touch-drag zooms the board and shows a crosshair
   /// for precise stone placement (designed for mobile).
   final bool dragToPlace;
+
+  /// How many cells are visible when zoomed in (9 = max zoom, boardSize = no
+  /// zoom but crosshair is still shown).
+  final int zoomCells;
 
   const NeonBoard({
     super.key,
@@ -36,6 +40,7 @@ class NeonBoard extends StatefulWidget {
     this.showLabels = true,
     this.themeOverride,
     this.dragToPlace = false,
+    this.zoomCells = 9,
   });
 
   @override
@@ -71,10 +76,11 @@ class _NeonBoardState extends State<NeonBoard> {
   bool get _showTournamentZone =>
       widget.moveCount == 2 && widget.currentPlayer == StoneType.player1;
 
-  /// Zoom factor: a 19×19 board shows ~9 cells → ~2.1× zoom.
+  /// Zoom factor based on how many cells should be visible.
   double get _zoomScale {
-    if (_size <= 9) return 1.0;
-    return _size / 9.0;
+    final cells = widget.zoomCells.clamp(9, _size);
+    if (_size <= cells) return 1.0;
+    return _size / cells.toDouble();
   }
 
   /// Finger-to-crosshair offset in logical pixels (~1 cm).

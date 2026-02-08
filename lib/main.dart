@@ -15,6 +15,13 @@ final ValueNotifier<BoardThemeData> boardThemeNotifier =
 /// Global board size notifier – adjustable from 9×9 to 19×19.
 final ValueNotifier<int> boardSizeNotifier = ValueNotifier(Constants.boardSize);
 
+/// Whether the touch-zoom crosshair is enabled (for mobile stone placement).
+final ValueNotifier<bool> dragToPlaceNotifier = ValueNotifier(true);
+
+/// Zoom level for the touch-zoom crosshair (9 = max zoom, boardSize = no zoom).
+/// Represents how many cells are visible when zoomed in.
+final ValueNotifier<int> zoomCellsNotifier = ValueNotifier(9);
+
 void main() {
   runApp(const NeonPenteApp());
 }
