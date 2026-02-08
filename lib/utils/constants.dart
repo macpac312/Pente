@@ -1,5 +1,6 @@
 class Constants {
-  static const int boardSize = 19;
+  static const int boardSize = 19;     // default / maximum
+  static const int minBoardSize = 9;
   static const int boardCenter = 9; // 0-indexed center of 19x19
   static const int capturesNeededToWin = 5; // 5 pairs = 10 stones
   static const int stonesInRowToWin = 5;

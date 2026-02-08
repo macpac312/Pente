@@ -19,12 +19,15 @@ class MoveRecord {
   bool get hadCapture => capturedStones.isNotEmpty;
   int get capturedPairs => capturedStones.length ~/ 2;
 
-  String get notation {
-    final col = String.fromCharCode(65 + position.col); // A-S
-    final row = (Constants.boardSize - position.row).toString();
+  /// Chess-style notation. Pass [boardSize] for non-19×19 boards.
+  String notationFor(int boardSize) {
+    final col = String.fromCharCode(65 + position.col);
+    final row = (boardSize - position.row).toString();
     final capture = hadCapture ? 'x${capturedPairs}' : '';
     return '$col$row$capture';
   }
+
+  String get notation => notationFor(Constants.boardSize);
 
   @override
   String toString() => 'Move #$moveNumber: ${player == StoneType.player1 ? "P1" : "P2"} at $notation';

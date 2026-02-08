@@ -142,8 +142,8 @@ class AIPlayer {
 
       // Bonus for center proximity (early game)
       if (state.moveCount < 10) {
-        final centerDist = move.distanceTo(
-            const Position(Constants.boardCenter, Constants.boardCenter));
+        final center = state.board.length ~/ 2;
+        final centerDist = move.distanceTo(Position(center, center));
         score += (10 - centerDist).clamp(0, 10).toDouble() * 2;
       }
 
@@ -203,12 +203,13 @@ class AIPlayer {
     }
 
     // Penalty for creating vulnerable pairs
+    final size = state.board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
     for (final dir in Constants.directions) {
       final nr = move.row + dir[0];
       final nc = move.col + dir[1];
-      if (nr >= 0 && nr < Constants.boardSize &&
-          nc >= 0 && nc < Constants.boardSize &&
+      if (nr >= 0 && nr < size &&
+          nc >= 0 && nc < size &&
           testBoard[nr][nc] == player) {
         // Check if this creates a vulnerable pair
         final beforeR = move.row - dir[0];
@@ -216,10 +217,10 @@ class AIPlayer {
         final afterR = nr + dir[0];
         final afterC = nc + dir[1];
 
-        if (beforeR >= 0 && beforeR < Constants.boardSize &&
-            beforeC >= 0 && beforeC < Constants.boardSize &&
-            afterR >= 0 && afterR < Constants.boardSize &&
-            afterC >= 0 && afterC < Constants.boardSize) {
+        if (beforeR >= 0 && beforeR < size &&
+            beforeC >= 0 && beforeC < size &&
+            afterR >= 0 && afterR < size &&
+            afterC >= 0 && afterC < size) {
           if ((testBoard[beforeR][beforeC] == opponent &&
                   testBoard[afterR][afterC] == StoneType.none) ||
               (testBoard[beforeR][beforeC] == StoneType.none &&
@@ -231,18 +232,18 @@ class AIPlayer {
       // Also check in negative direction
       final nr2 = move.row - dir[0];
       final nc2 = move.col - dir[1];
-      if (nr2 >= 0 && nr2 < Constants.boardSize &&
-          nc2 >= 0 && nc2 < Constants.boardSize &&
+      if (nr2 >= 0 && nr2 < size &&
+          nc2 >= 0 && nc2 < size &&
           testBoard[nr2][nc2] == player) {
         final beforeR = nr2 - dir[0];
         final beforeC = nc2 - dir[1];
         final afterR = move.row + dir[0];
         final afterC = move.col + dir[1];
 
-        if (beforeR >= 0 && beforeR < Constants.boardSize &&
-            beforeC >= 0 && beforeC < Constants.boardSize &&
-            afterR >= 0 && afterR < Constants.boardSize &&
-            afterC >= 0 && afterC < Constants.boardSize) {
+        if (beforeR >= 0 && beforeR < size &&
+            beforeC >= 0 && beforeC < size &&
+            afterR >= 0 && afterR < size &&
+            afterC >= 0 && afterC < size) {
           if ((testBoard[beforeR][beforeC] == opponent &&
                   testBoard[afterR][afterC] == StoneType.none) ||
               (testBoard[beforeR][beforeC] == StoneType.none &&
@@ -369,8 +370,8 @@ class AIPlayer {
       }
 
       // Center proximity
-      score += (9 - m.distanceTo(
-          const Position(Constants.boardCenter, Constants.boardCenter))).toDouble();
+      final center = state.board.length ~/ 2;
+      score += (center - m.distanceTo(Position(center, center))).toDouble();
 
       return _ScoredMove(m, score);
     }).toList();

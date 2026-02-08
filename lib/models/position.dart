@@ -18,7 +18,12 @@ class Position {
   @override
   String toString() => '($row, $col)';
 
+  /// Check bounds against the maximum board size (19×19).
   bool get isValid => row >= 0 && row < 19 && col >= 0 && col < 19;
+
+  /// Check bounds against an arbitrary board size.
+  bool isValidFor(int boardSize) =>
+      row >= 0 && row < boardSize && col >= 0 && col < boardSize;
 
   int distanceTo(Position other) {
     final dr = (row - other.row).abs();

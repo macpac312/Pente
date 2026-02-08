@@ -6,7 +6,7 @@ import '../models/game_state.dart';
 import '../models/position.dart';
 import '../models/board_theme.dart';
 import '../utils/constants.dart';
-import '../main.dart' show boardThemeNotifier;
+import '../main.dart' show boardThemeNotifier, boardSizeNotifier;
 import '../theme/neon_theme.dart';
 import '../widgets/neon_board.dart';
 import '../widgets/eval_bar_widget.dart';
@@ -91,7 +91,7 @@ class _GameScreenState extends State<GameScreen> {
     _mode = widget.mode;
     _timeControl = widget.timeControl;
     _aiPlayer = AIPlayer(difficulty: _difficulty);
-    _gameState = GameState.initial();
+    _gameState = GameState.initial(size: boardSizeNotifier.value);
 
     // Init clock
     if (_hasClock) {
@@ -114,6 +114,7 @@ class _GameScreenState extends State<GameScreen> {
           data: {
             'yourColor': StoneType.player2.index,
             'timeControl': _timeControl.index,
+            'boardSize': _gameState.size,
           },
         ));
       }
@@ -201,6 +202,12 @@ class _GameScreenState extends State<GameScreen> {
               _player2TimeMs = ms;
             });
           }
+        }
+        final bs = msg.data['boardSize'] as int?;
+        if (bs != null && bs != _gameState.size) {
+          setState(() {
+            _gameState = GameState.initial(size: bs);
+          });
         }
       default:
         break;
@@ -561,7 +568,7 @@ class _GameScreenState extends State<GameScreen> {
   void _resetGame() {
     _stopClock();
     setState(() {
-      _gameState = GameState.initial();
+      _gameState = GameState.initial(size: boardSizeNotifier.value);
       _isAIThinking = false;
       _coachHints = [];
       _currentHighlight = null;
@@ -1732,7 +1739,7 @@ class _GameScreenState extends State<GameScreen> {
               // Player 1 move — uses board theme color
               Expanded(
                 child: Text(
-                  moves[p1Idx].notation,
+                  moves[p1Idx].notationFor(_gameState.size),
                   style: TextStyle(
                     color: _bt.player1Color,
                     fontSize: 13,
@@ -1744,7 +1751,7 @@ class _GameScreenState extends State<GameScreen> {
               if (p2Idx < moves.length)
                 Expanded(
                   child: Text(
-                    moves[p2Idx].notation,
+                    moves[p2Idx].notationFor(_gameState.size),
                     style: TextStyle(
                       color: _bt.player2Color,
                       fontSize: 13,

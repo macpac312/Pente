@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/board_theme.dart';
 import 'theme/neon_theme.dart';
+import 'utils/constants.dart';
 import 'screens/home_screen.dart';
 
 /// Global theme mode notifier – accessible from settings screen.
@@ -10,6 +11,9 @@ final ValueNotifier<ThemeMode> themeModeNotifier =
 /// Global board theme notifier – customizable colors for board & stones.
 final ValueNotifier<BoardThemeData> boardThemeNotifier =
     ValueNotifier(BoardThemeData.darkDefault());
+
+/// Global board size notifier – adjustable from 9×9 to 19×19.
+final ValueNotifier<int> boardSizeNotifier = ValueNotifier(Constants.boardSize);
 
 void main() {
   runApp(const NeonPenteApp());
