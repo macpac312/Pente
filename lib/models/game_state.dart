@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import '../utils/constants.dart';
 import 'position.dart';
 import 'move_record.dart';
@@ -25,10 +26,17 @@ class GameState {
     this.winningStones,
   });
 
-  factory GameState.initial() {
+  /// The side length of the board (derived from the board data).
+  int get size => board.length;
+
+  /// The center index for this board.
+  int get center => board.length ~/ 2;
+
+  factory GameState.initial({int size = Constants.boardSize}) {
+    final s = size.clamp(Constants.minBoardSize, Constants.boardSize);
     final board = List.generate(
-      Constants.boardSize,
-      (_) => List.filled(Constants.boardSize, StoneType.none),
+      s,
+      (_) => List.filled(s, StoneType.none),
     );
     return GameState(board: board);
   }
@@ -58,7 +66,7 @@ class GameState {
   }
 
   StoneType stoneAt(Position pos) {
-    if (!pos.isValid) return StoneType.none;
+    if (!pos.isValidFor(size)) return StoneType.none;
     return board[pos.row][pos.col];
   }
 
@@ -94,9 +102,11 @@ class GameState {
 
   factory GameState.fromJson(Map<String, dynamic> json) {
     final boardStr = json['board'] as String;
-    final board = List.generate(Constants.boardSize, (r) {
-      return List.generate(Constants.boardSize, (c) {
-        final idx = r * Constants.boardSize + c;
+    // Derive board size from string length (size² characters)
+    final size = math.sqrt(boardStr.length).round();
+    final board = List.generate(size, (r) {
+      return List.generate(size, (c) {
+        final idx = r * size + c;
         return StoneType.values[int.parse(boardStr[idx])];
       });
     });

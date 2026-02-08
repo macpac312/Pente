@@ -35,17 +35,23 @@ class NeonBoard extends StatelessWidget {
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
+  int get _size => board.length;
+  int get _center => board.length ~/ 2;
+
   bool get _showTournamentZone =>
       moveCount == 2 && currentPlayer == StoneType.player1;
 
-  static bool _isStarPoint(int row, int col) {
-    return (row == 3 || row == 9 || row == 15) &&
-        (col == 3 || col == 9 || col == 15);
+  /// Compute star point positions for any board size.
+  static bool _isStarPoint(int row, int col, int boardSize) {
+    final center = boardSize ~/ 2;
+    final d = boardSize >= 13 ? 3 : 2;
+    final pts = <int>{d, center, boardSize - 1 - d};
+    return pts.contains(row) && pts.contains(col);
   }
 
-  static bool _isInTournamentZone(int row, int col) {
-    final dr = (row - Constants.boardCenter).abs();
-    final dc = (col - Constants.boardCenter).abs();
+  bool _isInTournamentZone(int row, int col) {
+    final dr = (row - _center).abs();
+    final dc = (col - _center).abs();
     return dr < Constants.tournamentRuleDistance &&
         dc < Constants.tournamentRuleDistance;
   }
@@ -84,7 +90,7 @@ class NeonBoard extends StatelessWidget {
               const SizedBox(width: 18),
               Expanded(
                 child: Row(
-                  children: List.generate(Constants.boardSize, (col) {
+                  children: List.generate(_size, (col) {
                     return Expanded(
                       child: Center(
                         child: Text(
@@ -111,11 +117,11 @@ class NeonBoard extends StatelessWidget {
               SizedBox(
                 width: 18,
                 child: Column(
-                  children: List.generate(Constants.boardSize, (row) {
+                  children: List.generate(_size, (row) {
                     return Expanded(
                       child: Center(
                         child: Text(
-                          '${Constants.boardSize - row}',
+                          '${_size - row}',
                           style: TextStyle(
                             color: bt.labelColor,
                             fontSize: 9,
@@ -160,10 +166,10 @@ class NeonBoard extends StatelessWidget {
           children: [
             // Grid of intersections
             Column(
-              children: List.generate(Constants.boardSize, (row) {
+              children: List.generate(_size, (row) {
                 return Expanded(
                   child: Row(
-                    children: List.generate(Constants.boardSize, (col) {
+                    children: List.generate(_size, (col) {
                       return Expanded(
                         child: _buildIntersection(row, col, bt),
                       );
@@ -179,8 +185,8 @@ class NeonBoard extends StatelessWidget {
                 child: IgnorePointer(
                   child: CustomPaint(
                     painter: _TournamentBoundaryPainter(
-                      boardSize: Constants.boardSize,
-                      centerIdx: Constants.boardCenter,
+                      boardSize: _size,
+                      centerIdx: _center,
                       distance: Constants.tournamentRuleDistance,
                     ),
                   ),
@@ -219,7 +225,7 @@ class NeonBoard extends StatelessWidget {
                 painter: _GridLinePainter(
                   row: row,
                   col: col,
-                  boardSize: Constants.boardSize,
+                  boardSize: _size,
                   lineColor: bt.gridLineColor,
                 ),
               ),
@@ -249,7 +255,7 @@ class NeonBoard extends StatelessWidget {
                 ),
 
               // Star point dot (only visible when no stone)
-              if (stone == StoneType.none && _isStarPoint(row, col))
+              if (stone == StoneType.none && _isStarPoint(row, col, _size))
                 Container(
                   width: 6,
                   height: 6,

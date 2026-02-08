@@ -6,19 +6,22 @@ import '../utils/constants.dart';
 class PenteEngine {
   /// Check if a move is valid given the current game state.
   static bool isValidMove(GameState state, Position pos) {
-    if (!pos.isValid) return false;
+    final size = state.board.length;
+    if (!pos.isValidFor(size)) return false;
     if (state.board[pos.row][pos.col] != StoneType.none) return false;
     if (state.isGameOver) return false;
 
+    final center = size ~/ 2;
+
     // First move must be at center
     if (state.moveCount == 0) {
-      return pos.row == Constants.boardCenter && pos.col == Constants.boardCenter;
+      return pos.row == center && pos.col == center;
     }
 
     // Tournament rule: player 1's second move must be >= 3 away from center
     if (state.moveCount == 2 && state.currentPlayer == StoneType.player1) {
-      final center = const Position(Constants.boardCenter, Constants.boardCenter);
-      if (pos.distanceTo(center) < Constants.tournamentRuleDistance) {
+      final centerPos = Position(center, center);
+      if (pos.distanceTo(centerPos) < Constants.tournamentRuleDistance) {
         return false;
       }
     }
@@ -81,6 +84,7 @@ class PenteEngine {
   /// Find all captures resulting from placing a stone at pos.
   static List<Position> _findCaptures(
       List<List<StoneType>> board, Position pos, StoneType player) {
+    final size = board.length;
     final opponent =
         player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
     final captured = <Position>[];
@@ -94,9 +98,9 @@ class PenteEngine {
         final p2 = Position(pos.row + dr * 2, pos.col + dc * 2);
         final p3 = Position(pos.row + dr * 3, pos.col + dc * 3);
 
-        if (p1.isValid &&
-            p2.isValid &&
-            p3.isValid &&
+        if (p1.isValidFor(size) &&
+            p2.isValidFor(size) &&
+            p3.isValidFor(size) &&
             board[p1.row][p1.col] == opponent &&
             board[p2.row][p2.col] == opponent &&
             board[p3.row][p3.col] == player) {
@@ -134,18 +138,19 @@ class PenteEngine {
   /// Check if the last move creates 5 (or more) in a row.
   static List<Position>? _checkFiveInRow(
       List<List<StoneType>> board, Position pos, StoneType player) {
+    final size = board.length;
     for (final dir in Constants.directions) {
       final line = <Position>[pos];
 
-      for (int i = 1; i < Constants.boardSize; i++) {
+      for (int i = 1; i < size; i++) {
         final next = Position(pos.row + dir[0] * i, pos.col + dir[1] * i);
-        if (!next.isValid || board[next.row][next.col] != player) break;
+        if (!next.isValidFor(size) || board[next.row][next.col] != player) break;
         line.add(next);
       }
 
-      for (int i = 1; i < Constants.boardSize; i++) {
+      for (int i = 1; i < size; i++) {
         final next = Position(pos.row - dir[0] * i, pos.col - dir[1] * i);
-        if (!next.isValid || board[next.row][next.col] != player) break;
+        if (!next.isValidFor(size) || board[next.row][next.col] != player) break;
         line.insert(0, next);
       }
 
@@ -158,9 +163,10 @@ class PenteEngine {
 
   /// Get all valid moves for the current state.
   static List<Position> getValidMoves(GameState state) {
+    final size = state.board.length;
     final moves = <Position>[];
-    for (int r = 0; r < Constants.boardSize; r++) {
-      for (int c = 0; c < Constants.boardSize; c++) {
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
         final pos = Position(r, c);
         if (isValidMove(state, pos)) {
           moves.add(pos);
@@ -172,20 +178,22 @@ class PenteEngine {
 
   /// Get "interesting" moves near existing stones (for AI efficiency).
   static List<Position> getNeighborMoves(GameState state, {int radius = 2}) {
+    final size = state.board.length;
+    final center = size ~/ 2;
     if (state.moveCount == 0) {
-      return [const Position(Constants.boardCenter, Constants.boardCenter)];
+      return [Position(center, center)];
     }
 
     final seen = <Position>{};
     final moves = <Position>[];
 
-    for (int r = 0; r < Constants.boardSize; r++) {
-      for (int c = 0; c < Constants.boardSize; c++) {
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
         if (state.board[r][c] != StoneType.none) {
           for (int dr = -radius; dr <= radius; dr++) {
             for (int dc = -radius; dc <= radius; dc++) {
               final pos = Position(r + dr, c + dc);
-              if (pos.isValid &&
+              if (pos.isValidFor(size) &&
                   !seen.contains(pos) &&
                   isValidMove(state, pos)) {
                 seen.add(pos);
@@ -236,17 +244,18 @@ class PenteEngine {
 
   /// Scan all 5-cell windows across the board and score patterns for a player.
   static double _evaluateAllPatterns(List<List<StoneType>> board, StoneType player) {
+    final size = board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
     double score = 0;
 
     for (final dir in Constants.directions) {
-      for (int r = 0; r < Constants.boardSize; r++) {
-        for (int c = 0; c < Constants.boardSize; c++) {
+      for (int r = 0; r < size; r++) {
+        for (int c = 0; c < size; c++) {
           // Check if a 5-cell window fits starting at (r,c) in this direction
           final endR = r + dir[0] * 4;
           final endC = c + dir[1] * 4;
-          if (endR < 0 || endR >= Constants.boardSize ||
-              endC < 0 || endC >= Constants.boardSize) continue;
+          if (endR < 0 || endR >= size ||
+              endC < 0 || endC >= size) continue;
 
           int playerCount = 0;
           bool hasOpponent = false;
@@ -283,7 +292,8 @@ class PenteEngine {
   }
 
   static bool _isCellEmpty(List<List<StoneType>> board, int r, int c) {
-    if (r < 0 || r >= Constants.boardSize || c < 0 || c >= Constants.boardSize) {
+    final size = board.length;
+    if (r < 0 || r >= size || c < 0 || c >= size) {
       return false; // Off-board = blocked
     }
     return board[r][c] == StoneType.none;
@@ -408,17 +418,18 @@ class PenteEngine {
 
   /// Count how many of the player's adjacent pairs are vulnerable to capture.
   static int _countVulnerablePairs(List<List<StoneType>> board, StoneType player) {
+    final size = board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
     int count = 0;
 
-    for (int r = 0; r < Constants.boardSize; r++) {
-      for (int c = 0; c < Constants.boardSize; c++) {
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
         if (board[r][c] != player) continue;
         for (final dir in Constants.directions) {
           final nr = r + dir[0];
           final nc = c + dir[1];
-          if (nr < 0 || nr >= Constants.boardSize ||
-              nc < 0 || nc >= Constants.boardSize) continue;
+          if (nr < 0 || nr >= size ||
+              nc < 0 || nc >= size) continue;
           if (board[nr][nc] != player) continue;
 
           // We have a pair at (r,c)-(nr,nc). Check if vulnerable.
@@ -428,10 +439,10 @@ class PenteEngine {
           final afterC = nc + dir[1];
 
           // Vulnerable if one end has opponent and other end is empty
-          final beforeValid = beforeR >= 0 && beforeR < Constants.boardSize &&
-              beforeC >= 0 && beforeC < Constants.boardSize;
-          final afterValid = afterR >= 0 && afterR < Constants.boardSize &&
-              afterC >= 0 && afterC < Constants.boardSize;
+          final beforeValid = beforeR >= 0 && beforeR < size &&
+              beforeC >= 0 && beforeC < size;
+          final afterValid = afterR >= 0 && afterR < size &&
+              afterC >= 0 && afterC < size;
 
           if (beforeValid && afterValid) {
             final beforeStone = board[beforeR][beforeC];
@@ -450,11 +461,12 @@ class PenteEngine {
 
   /// Count positions where player can capture opponent's pairs.
   static int _countCaptureThreats(GameState state, StoneType player) {
+    final size = state.board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
     int threats = 0;
 
-    for (int r = 0; r < Constants.boardSize; r++) {
-      for (int c = 0; c < Constants.boardSize; c++) {
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
         if (state.board[r][c] != StoneType.none) continue;
         for (final dir in Constants.directions) {
           for (final sign in [1, -1]) {
@@ -463,9 +475,9 @@ class PenteEngine {
             final p1 = Position(r + dr, c + dc);
             final p2 = Position(r + dr * 2, c + dc * 2);
             final p3 = Position(r + dr * 3, c + dc * 3);
-            if (p1.isValid &&
-                p2.isValid &&
-                p3.isValid &&
+            if (p1.isValidFor(size) &&
+                p2.isValidFor(size) &&
+                p3.isValidFor(size) &&
                 state.board[p1.row][p1.col] == opponent &&
                 state.board[p2.row][p2.col] == opponent &&
                 state.board[p3.row][p3.col] == player) {
@@ -485,16 +497,17 @@ class PenteEngine {
   /// Detect all notable shapes/patterns for a player on the board.
   /// Returns a list of ShapeInfo describing each found shape.
   static List<ShapeInfo> detectShapes(List<List<StoneType>> board, StoneType player) {
+    final size = board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
     final shapes = <ShapeInfo>[];
 
     for (final dir in Constants.directions) {
-      for (int r = 0; r < Constants.boardSize; r++) {
-        for (int c = 0; c < Constants.boardSize; c++) {
+      for (int r = 0; r < size; r++) {
+        for (int c = 0; c < size; c++) {
           final endR = r + dir[0] * 4;
           final endC = c + dir[1] * 4;
-          if (endR < 0 || endR >= Constants.boardSize ||
-              endC < 0 || endC >= Constants.boardSize) continue;
+          if (endR < 0 || endR >= size ||
+              endC < 0 || endC >= size) continue;
 
           int playerCount = 0;
           bool hasOpponent = false;
@@ -589,11 +602,12 @@ class PenteEngine {
   /// Detect wedge opportunities: placing between two opponent pairs to threaten both.
   static List<Position> findWedgeOpportunities(
       List<List<StoneType>> board, StoneType player) {
+    final size = board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
     final wedges = <Position>[];
 
-    for (int r = 0; r < Constants.boardSize; r++) {
-      for (int c = 0; c < Constants.boardSize; c++) {
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
         if (board[r][c] != StoneType.none) continue;
         final pos = Position(r, c);
 
@@ -606,7 +620,7 @@ class PenteEngine {
             final p1 = Position(r + dr, c + dc);
             final p2 = Position(r + dr * 2, c + dc * 2);
             final p3 = Position(r + dr * 3, c + dc * 3);
-            if (p1.isValid && p2.isValid && p3.isValid &&
+            if (p1.isValidFor(size) && p2.isValidFor(size) && p3.isValidFor(size) &&
                 board[p1.row][p1.col] == opponent &&
                 board[p2.row][p2.col] == opponent &&
                 (board[p3.row][p3.col] == player ||
@@ -636,6 +650,7 @@ class PenteEngine {
   static List<CoachHint> analyzePosition(GameState state) {
     final hints = <CoachHint>[];
     final player = state.currentPlayer;
+    final size = state.board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
 
     // Check for immediate winning moves
@@ -645,7 +660,7 @@ class PenteEngine {
         hints.add(CoachHint(
           type: HintType.winningMove,
           position: move,
-          message: 'Winning move available at ${posNotation(move)}!',
+          message: 'Winning move available at ${posNotation(move, boardSize: size)}!',
           priority: 100,
         ));
       }
@@ -659,7 +674,7 @@ class PenteEngine {
         hints.add(CoachHint(
           type: HintType.blockThreat,
           position: move,
-          message: 'Block opponent\'s winning threat at ${posNotation(move)}!',
+          message: 'Block opponent\'s winning threat at ${posNotation(move, boardSize: size)}!',
           priority: 90,
         ));
       }
@@ -679,8 +694,8 @@ class PenteEngine {
           type: HintType.captureOpportunity,
           position: move,
           message: isWinningCapture
-              ? 'Win by capture! Take $pairs pair(s) at ${posNotation(move)}'
-              : 'Capture $pairs pair(s) at ${posNotation(move)}',
+              ? 'Win by capture! Take $pairs pair(s) at ${posNotation(move, boardSize: size)}'
+              : 'Capture $pairs pair(s) at ${posNotation(move, boardSize: size)}',
           priority: isWinningCapture ? 95 : 70,
         ));
       }
@@ -698,7 +713,7 @@ class PenteEngine {
       hints.add(CoachHint(
         type: HintType.wedge,
         position: pos,
-        message: 'Wedge at ${posNotation(pos)} threatens multiple captures!',
+        message: 'Wedge at ${posNotation(pos, boardSize: size)} threatens multiple captures!',
         priority: 65,
       ));
     }
@@ -714,6 +729,7 @@ class PenteEngine {
   static void _analyzeShapes(
       GameState state, StoneType player, StoneType opponent,
       List<CoachHint> hints) {
+    final size = state.board.length;
     // Detect opponent's dangerous shapes first
     final opponentShapes = detectShapes(state.board, opponent);
     for (final shape in opponentShapes) {
@@ -731,7 +747,7 @@ class PenteEngine {
             hints.add(CoachHint(
               type: HintType.blockThreat,
               position: keyMove,
-              message: 'Block opponent\'s ${_shapeName(shape.type)} at ${posNotation(keyMove)}',
+              message: 'Block opponent\'s ${_shapeName(shape.type)} at ${posNotation(keyMove, boardSize: size)}',
               priority: 85,
             ));
             break;
@@ -743,7 +759,7 @@ class PenteEngine {
             hints.add(CoachHint(
               type: HintType.blockThreat,
               position: keyMove,
-              message: 'Block opponent\'s ${_shapeName(shape.type)} at ${posNotation(keyMove)}',
+              message: 'Block opponent\'s ${_shapeName(shape.type)} at ${posNotation(keyMove, boardSize: size)}',
               priority: 75,
             ));
             break;
@@ -763,7 +779,7 @@ class PenteEngine {
           hints.add(CoachHint(
             type: HintType.openTessera,
             position: move,
-            message: 'Create an Open Tessera at ${posNotation(move)} - unstoppable!',
+            message: 'Create an Open Tessera at ${posNotation(move, boardSize: size)} - unstoppable!',
             priority: 82,
           ));
         } else if (shape.type == ShapeType.openTria &&
@@ -771,7 +787,7 @@ class PenteEngine {
           hints.add(CoachHint(
             type: HintType.openTria,
             position: move,
-            message: 'Create an Open Tria at ${posNotation(move)} - hard to defend',
+            message: 'Create an Open Tria at ${posNotation(move, boardSize: size)} - hard to defend',
             priority: 60,
           ));
         } else if (shape.type == ShapeType.stretchTria &&
@@ -779,7 +795,7 @@ class PenteEngine {
           hints.add(CoachHint(
             type: HintType.stretchTria,
             position: move,
-            message: 'Create a Stretch Tria at ${posNotation(move)} - tricky to block',
+            message: 'Create a Stretch Tria at ${posNotation(move, boardSize: size)} - tricky to block',
             priority: 55,
           ));
         }
@@ -807,22 +823,23 @@ class PenteEngine {
 
   static void _findVulnerablePairs(
       GameState state, StoneType player, List<CoachHint> hints) {
+    final size = state.board.length;
     final opponent = player == StoneType.player1 ? StoneType.player2 : StoneType.player1;
 
-    for (int r = 0; r < Constants.boardSize; r++) {
-      for (int c = 0; c < Constants.boardSize; c++) {
+    for (int r = 0; r < size; r++) {
+      for (int c = 0; c < size; c++) {
         if (state.board[r][c] != player) continue;
         for (final dir in Constants.directions) {
           final nr = r + dir[0];
           final nc = c + dir[1];
-          if (nr < 0 || nr >= Constants.boardSize ||
-              nc < 0 || nc >= Constants.boardSize) continue;
+          if (nr < 0 || nr >= size ||
+              nc < 0 || nc >= size) continue;
           if (state.board[nr][nc] != player) continue;
 
           final before = Position(r - dir[0], c - dir[1]);
           final after = Position(nr + dir[0], nc + dir[1]);
-          if (before.isValid &&
-              after.isValid &&
+          if (before.isValidFor(size) &&
+              after.isValidFor(size) &&
               ((state.board[before.row][before.col] == StoneType.none &&
                       state.board[after.row][after.col] == opponent) ||
                   (state.board[before.row][before.col] == opponent &&
@@ -833,7 +850,7 @@ class PenteEngine {
               type: HintType.vulnerablePair,
               position: threatPos,
               message:
-                  'Your pair at ${posNotation(Position(r, c))}-${posNotation(Position(nr, nc))} '
+                  'Your pair at ${posNotation(Position(r, c), boardSize: size)}-${posNotation(Position(nr, nc), boardSize: size)} '
                   'is vulnerable! Protect it or use Stretch Twos instead.',
               priority: 60,
             ));
@@ -845,6 +862,7 @@ class PenteEngine {
 
   static void _findBuildOpportunities(
       GameState state, StoneType player, List<CoachHint> hints) {
+    final size = state.board.length;
     for (final move in getNeighborMoves(state, radius: 1)) {
       final testBoard = state.board.map((r) => List<StoneType>.from(r)).toList();
       testBoard[move.row][move.col] = player;
@@ -854,7 +872,7 @@ class PenteEngine {
         int openEnds = 0;
         for (int i = 1; i <= 4; i++) {
           final p = Position(move.row + dir[0] * i, move.col + dir[1] * i);
-          if (!p.isValid) break;
+          if (!p.isValidFor(size)) break;
           if (testBoard[p.row][p.col] == player) {
             count++;
           } else if (testBoard[p.row][p.col] == StoneType.none) {
@@ -866,7 +884,7 @@ class PenteEngine {
         }
         for (int i = 1; i <= 4; i++) {
           final p = Position(move.row - dir[0] * i, move.col - dir[1] * i);
-          if (!p.isValid) break;
+          if (!p.isValidFor(size)) break;
           if (testBoard[p.row][p.col] == player) {
             count++;
           } else if (testBoard[p.row][p.col] == StoneType.none) {
@@ -882,7 +900,7 @@ class PenteEngine {
             type: HintType.buildLine,
             position: move,
             message:
-                'Build a line of $count at ${posNotation(move)} ($openEnds open end${openEnds > 1 ? "s" : ""})',
+                'Build a line of $count at ${posNotation(move, boardSize: size)} ($openEnds open end${openEnds > 1 ? "s" : ""})',
             priority: 30 + count * 10,
           ));
         }
@@ -891,9 +909,9 @@ class PenteEngine {
   }
 
   /// Convert a board position to chess-style notation (e.g. J10).
-  static String posNotation(Position pos) {
+  static String posNotation(Position pos, {int boardSize = Constants.boardSize}) {
     final col = String.fromCharCode(65 + pos.col);
-    final row = (Constants.boardSize - pos.row).toString();
+    final row = (boardSize - pos.row).toString();
     return '$col$row';
   }
 }

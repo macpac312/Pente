@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../main.dart' show themeModeNotifier, boardThemeNotifier;
+import '../main.dart' show themeModeNotifier, boardThemeNotifier, boardSizeNotifier;
 import '../models/board_theme.dart';
 import '../models/position.dart';
 import '../theme/neon_theme.dart';
@@ -163,6 +163,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               (v) => setState(() => _tournamentRule = v),
               NeonTheme.neonGreen,
             ),
+            _buildBoardSizePicker(),
+            const SizedBox(height: 8),
             _buildDifficultyPicker(),
             const SizedBox(height: 24),
             _sectionTitle('DISPLAY'),
@@ -722,6 +724,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
           inactiveThumbColor: _txtSecondary.withAlpha(80),
           inactiveTrackColor: _txtSecondary.withAlpha(25),
         ),
+      ),
+    );
+  }
+
+  // ── Board size picker ────────────────────────────────────────────
+
+  Widget _buildBoardSizePicker() {
+    final currentSize = boardSizeNotifier.value;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Board Size',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: NeonTheme.neonCyan,
+                  ),
+                ),
+              ),
+              Text(
+                '$currentSize \u00D7 $currentSize',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: NeonTheme.neonCyan,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Adjust the playing field from 9\u00D79 to 19\u00D719',
+            style: TextStyle(
+              fontSize: 11,
+              color: _txtSecondary.withAlpha(120),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: NeonTheme.neonCyan,
+              inactiveTrackColor: NeonTheme.neonCyan.withAlpha(30),
+              thumbColor: NeonTheme.neonCyan,
+              overlayColor: NeonTheme.neonCyan.withAlpha(30),
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            ),
+            child: Slider(
+              value: currentSize.toDouble(),
+              min: Constants.minBoardSize.toDouble(),
+              max: Constants.boardSize.toDouble(),
+              divisions: Constants.boardSize - Constants.minBoardSize,
+              onChanged: (v) {
+                setState(() {
+                  boardSizeNotifier.value = v.round();
+                });
+              },
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${Constants.minBoardSize}\u00D7${Constants.minBoardSize}',
+                style: TextStyle(fontSize: 10, color: _txtSecondary),
+              ),
+              Text(
+                '${Constants.boardSize}\u00D7${Constants.boardSize}',
+                style: TextStyle(fontSize: 10, color: _txtSecondary),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

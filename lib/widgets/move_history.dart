@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/move_record.dart';
 import '../theme/neon_theme.dart';
-import '../utils/constants.dart';
 
 class MoveHistoryWidget extends StatelessWidget {
   final List<MoveRecord> moves;
+  final int boardSize;
 
   const MoveHistoryWidget({
     super.key,
     required this.moves,
+    this.boardSize = 19,
   });
 
   @override
@@ -74,7 +75,7 @@ class MoveHistoryWidget extends StatelessWidget {
               // Player 1 move (cyan)
               Expanded(
                 child: Text(
-                  moves[p1Idx].notation,
+                  moves[p1Idx].notationFor(boardSize),
                   style: TextStyle(
                     color: NeonTheme.neonCyan,
                     fontSize: 13,
@@ -86,7 +87,7 @@ class MoveHistoryWidget extends StatelessWidget {
               if (p2Idx < moves.length)
                 Expanded(
                   child: Text(
-                    moves[p2Idx].notation,
+                    moves[p2Idx].notationFor(boardSize),
                     style: TextStyle(
                       color: NeonTheme.neonMagenta,
                       fontSize: 13,
