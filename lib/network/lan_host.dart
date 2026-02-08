@@ -77,11 +77,11 @@ class LanHost {
   // ── Internal ──────────────────────────────────────────────────────────
 
   void _sendBeacon() {
-    if (_disposed || _udpSocket == null || _localIp == null) return;
+    if (_disposed || _udpSocket == null || _localIp == null || _server == null) return;
     final beacon = LanBeacon(
       hostName: hostName,
       hostIp: _localIp!,
-      tcpPort: tcpPort,
+      tcpPort: _server!.port, // use actual bound port for robustness
       version: Constants.lanProtocolVersion,
     );
     final bytes = utf8.encode(beacon.encode());
@@ -135,6 +135,13 @@ class LanHost {
     });
   }
 
+  /// Detect the local WiFi/LAN IP address.
+  ///
+  /// On Android, [NetworkInterface.list] can return multiple interfaces
+  /// (wlan0, rmnet0, tun0, etc.) in arbitrary order.  Picking the first
+  /// non-loopback address often returns a mobile-data or VPN IP that is
+  /// unreachable from the local WiFi network.  We therefore score each
+  /// candidate and prefer WiFi interfaces over everything else.
   static Future<String?> _getLocalIp() async {
     try {
       final interfaces = await NetworkInterface.list(
@@ -142,11 +149,47 @@ class LanHost {
         includeLinkLocal: false,
         includeLoopback: false,
       );
+
+      String? bestIp;
+      int bestScore = -1;
+
       for (final iface in interfaces) {
+        final name = iface.name.toLowerCase();
         for (final addr in iface.addresses) {
-          if (!addr.isLoopback) return addr.address;
+          if (addr.isLoopback) continue;
+          final ip = addr.address;
+          int score = 0;
+
+          // WiFi interfaces (Android/Linux: wlan*, iOS/macOS: en0)
+          if (name.startsWith('wlan') || name == 'en0') {
+            score = 100;
+          }
+          // Wired Ethernet (Linux: eth*, enp*, ens*)
+          else if (name.startsWith('eth') || name.startsWith('en')) {
+            score = 80;
+          }
+          // Anything with a typical WiFi-router subnet
+          else if (ip.startsWith('192.168.')) {
+            score = 60;
+          }
+          // Other private ranges (10.x.x.x, 172.16-31.x.x)
+          else {
+            score = 10;
+          }
+
+          // Within the same interface tier, prefer 192.168.x.x
+          if (ip.startsWith('192.168.')) {
+            score += 5;
+          }
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestIp = ip;
+          }
         }
       }
+
+      return bestIp;
     } catch (_) {}
     return null;
   }
