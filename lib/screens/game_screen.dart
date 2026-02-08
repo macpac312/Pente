@@ -1550,6 +1550,10 @@ class _GameScreenState extends State<GameScreen> {
   // ── Board Area ─────────────────────────────────────────────────────────
 
   Widget _buildBoardArea() {
+    final isMobile =
+        Theme.of(context).platform == TargetPlatform.android ||
+        Theme.of(context).platform == TargetPlatform.iOS;
+
     return Padding(
       padding: const EdgeInsets.all(4),
       child: NeonBoard(
@@ -1563,6 +1567,7 @@ class _GameScreenState extends State<GameScreen> {
         winningStones: _gameState.winningStones,
         moveCount: _gameState.moveCount,
         currentPlayer: _gameState.currentPlayer,
+        dragToPlace: isMobile,
       ),
     );
   }
