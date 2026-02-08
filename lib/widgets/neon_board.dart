@@ -52,8 +52,16 @@ class _NeonBoardState extends State<NeonBoard> {
   /// Snapped target as a board [Position] (null if off-board).
   Position? _targetSnapped;
 
+  /// Raw touch position in the board widget's coordinate space (screen-local).
+  Offset _touchLocal = Offset.zero;
+
   /// Cached board pixel size for coordinate math.
   double _boardPixelSize = 0;
+
+  /// Movement amplification: >1 makes the target move faster than the finger.
+  /// This produces the "Pente Live" effect where the crosshair follows the
+  /// finger while the board pans in the opposite direction.
+  static const double _moveAmplification = 1.5;
 
   // ── Helpers ────────────────────────────────────────────────────────
 
@@ -96,6 +104,7 @@ class _NeonBoardState extends State<NeonBoard> {
     final cellSize = _boardPixelSize / _size;
     setState(() {
       _isDragging = true;
+      _touchLocal = event.localPosition;
       // First touch: no zoom yet, compute target in unzoomed space.
       _targetCellPos = Offset(
         event.localPosition.dx / cellSize,
@@ -108,11 +117,13 @@ class _NeonBoardState extends State<NeonBoard> {
   void _onPointerMove(PointerMoveEvent event) {
     if (!_isDragging) return;
     final cellSize = _boardPixelSize / _size;
-    // Delta is in screen pixels; divide by (cellSize × zoom) to get cell-delta.
     final scale = _zoomScale;
-    final dx = event.delta.dx / (cellSize * scale);
-    final dy = event.delta.dy / (cellSize * scale);
+    // Amplified delta: target moves faster than the finger so the board
+    // visibly pans in the opposite direction of the crosshair.
+    final dx = _moveAmplification * event.delta.dx / (cellSize * scale);
+    final dy = _moveAmplification * event.delta.dy / (cellSize * scale);
     setState(() {
+      _touchLocal = event.localPosition;
       _targetCellPos = Offset(
         _targetCellPos.dx + dx,
         _targetCellPos.dy + dy,
@@ -162,12 +173,19 @@ class _NeonBoardState extends State<NeonBoard> {
     final scale = _zoomScale;
     final cellSize = boardPx / _size;
 
-    // Center the zoom on the snapped target cell.
-    final focalX = (_targetSnapped!.col + 0.5) * cellSize;
-    final focalY = (_targetSnapped!.row + 0.5) * cellSize;
+    // Where the target cell sits in board-pixel space.
+    final targetPxX = (_targetSnapped!.col + 0.5) * cellSize;
+    final targetPxY = (_targetSnapped!.row + 0.5) * cellSize;
 
-    double tx = boardPx / 2 - focalX * scale;
-    double ty = boardPx / 2 - focalY * scale;
+    // Where the crosshair should appear on screen (above the finger).
+    final crosshairX = _touchLocal.dx;
+    final crosshairY = _touchLocal.dy - _fingerOffset;
+
+    // The transform maps board-space → screen-space:
+    //   screenPos = scale * boardPos + (tx, ty)
+    // Position the target cell at the crosshair screen location.
+    double tx = crosshairX - targetPxX * scale;
+    double ty = crosshairY - targetPxY * scale;
 
     // Clamp so the scaled board fills the visible area.
     final minT = -(boardPx * (scale - 1));
